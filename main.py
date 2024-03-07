@@ -1,4 +1,8 @@
 import requests, os, sys, json
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 if len(sys.argv) < 2:
 	print("Please add your question as an argument")
@@ -25,12 +29,11 @@ payload = {
     ]
 }
 
-apikey = os.environ['PERPLEXITY_API_KEY']
 
 headers = {
     "accept": "application/json",
     "content-type": "application/json",
-    "authorization": "Bearer " + os.environ['PERPLEXITY_API_KEY']
+    "authorization": "Bearer " + os.getenv('PERPLEXITY_API_KEY')
 }
 
 
