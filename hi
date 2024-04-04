@@ -4,19 +4,19 @@ import requests, os, sys
 try :
 	from rich import print
 except ImportError:
-	os.system("pip install rich")
-	from rich import print
+	pass
 
 API_KEY = os.getenv('PERPLEXITY_API_KEY')
 if not API_KEY:
 	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
-	print("You can get an API key by signing up at https://perplexity.ai")
+	print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
 	print("Then set the API key using the following command:")
 	print("	export PERPLEXITY_API_KEY=your_api_key")
 	print ("come back when you have a API_KEY")
 	exit()
 
 possible_models = ["sonar-small-chat", "sonar-medium-chat", "codellama-70b-instruct", "mistral-7b-instruct", "mixtral-8x7b-instruct"]
+online_models = ["sonar-small-online", "sonar-medium-online"]
 
 headers = {
 	"accept": "application/json",
@@ -35,14 +35,20 @@ def printAvailableModels():
 	print("\t Available models:")
 	for i in range(len(possible_models)):
 		print(f"		[{i}] - {possible_models[i]}")
+	print("\t Online models:")
+	print(f"		[so] - {online_models[0]}")
+	print(f"		[mo]- {online_models[1]}")
+	
 
 def pick_model(model):
 	if model is None:
 		return possible_models[0]
 	if model.isdigit() and int(model) < len(possible_models):
 		model = possible_models[int(model)]
-	if model is not None and model in possible_models:
+	if model is not None and (model in possible_models or model in online_models):
 		return model
+	if model == "so" or model == "mo":
+		return online_models[0] if model == "so" else online_models[1] 
 	if model != "?":
 		print(f'''Invalid model name, the model will be set to {possible_models[0]}''')
 		return possible_models[0]
@@ -58,16 +64,20 @@ def pick_model(model):
 		model = model
 	return model
 
-def chat_loop(question, model = possible_models[0], context= "Be precise and concise", single_use = True):
+def chat_loop(question: str, model: str = possible_models[0], context: str = "Be precise and concise", single_use: bool = True):
 	chat_payload = {
-		"model": model,
-		"messages": [
-			{
-				"role": "system",
-				"content": context
-			}
-		]
+		"model": model
 	}
+	if model in possible_models:
+		chat_payload["messages"] = [
+				{
+					"role": "system",
+					"content": context
+				}
+			]
+	else:
+		chat_payload["messages"] = []
+		single_use = True
 	while (question != "exit"):
 		if (single_use == False):
 			print(color("You: ", "blue"), end="")
@@ -95,39 +105,40 @@ def chat_loop(question, model = possible_models[0], context= "Be precise and con
 		print(color("/^.^\\ ", "purple" ) + message)
 
 
-if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" :
-	print("welcome to the perplexity command line ai!")
-	print(f'''
-	This is a simple command line interface to interact with the perplexity api in one of two ways: 
-	  - get a response to a question
-	  - chat with the bot.
-	To get a response to a question, use the following syntax:
-	  - CMD "Question" "Model (Optinal)" "System prompt (Optinal)"
-	  E.g. CMD "What is the capital of Nigeria?" "sonar-small-chat" "Be precise and concise" 
-	To chat with the bot, use the following syntax:
-	  - CMD "chat" "Model (Optinal)" "System prompt (Optinal)"
-	  E.g. CMD "chat" "sonar-small-chat" "Be precise and concise" 
-	To see the available models, use the following syntax:
-	  - CMD "models"
-	''')
-	printAvailableModels()
-	print(f'''
-	To exit the chat, type "exit" at any time.
-	''')
 
-	exit()
+def main(): # params
+	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" :
+		print("welcome to the perplexity command line ai!")
+		print(f'''
+		This is a simple command line interface to interact with the perplexity api in one of two ways: 
+		- get a response to a question
+		- chat with the bot.
+		To get a response to a question, use the following syntax:
+		- CMD "Question" "Model (Optinal)" "System prompt (Optinal)"
+		E.g. CMD "What is the capital of Nigeria?" "sonar-small-chat" "Be precise and concise" 
+		To chat with the bot, use the following syntax:
+		- CMD "chat" "Model (Optinal)" "System prompt (Optinal)"
+		E.g. CMD "chat" "sonar-small-chat" "Be precise and concise" 
+		To see the available models, use the following syntax:
+		- CMD "models"
+		''')
+		printAvailableModels()
+		print(f'''
+		To exit the chat, type "exit" at any time.
+		''')
+		exit()
 
-# params
-question = sys.argv[1]
-model = pick_model(sys.argv[2] if len(sys.argv) > 2 else None)
-context = sys.argv[3] if len(sys.argv) > 3 else "Be precise and concise"
+	question = sys.argv[1]
+	model = pick_model(sys.argv[2] if len(sys.argv) > 2 else None)
+	context = sys.argv[3] if len(sys.argv) > 3 else "Be precise and concise"
 
-if question == "models":
-	print("Available models:" + str(possible_models))
-	exit()
-
-
-single_use = False if question == "chat" else True
-chat_loop(question, model, context, single_use)
+	if question == "models":
+		print("Available models:" + str(possible_models))
+		exit()
 
 
+	single_use = False if question == "chat" else True
+	chat_loop(question, model, context, single_use)
+
+if __name__ == "__main__":
+	main()

@@ -16,19 +16,21 @@ current_dir=$(pwd)
 current_env=$(env)
 
   # if the terminal is bash, add the application to the path
-if [ -n "$BASH" ]; then
+if [ -f ~/.bashrc ]; then
 	echo "Application added to the path"
 	echo "export PATH=\$PATH:$(pwd)" >> ~/.bashrc
 	echo "API key added to the path"
 	echo "export PERPLEXITY_API_KEY=$API_KEY" >> ~/.bashrc
 	source ~/.bashrc
-elif [ -n "$ZSH_VERSION" ]; then
+fi
+if [ -f  ~/.zshrc ]; then
   # if the terminal is zsh, add the application to the path
   echo "export PATH=\$PATH:$(pwd)" >> ~/.zshrc
   echo "Application added to the path"
   echo "export PERPLEXITY_API_KEY=$API_KEY" >> ~/.zshrc
   source ~/.zshrc
-else
+fi
+if [ -f ~/.cshrc ]; then
   # if the terminal is csh, add the application to the path
   echo "setenv PATH \$PATH:$(pwd)" >> ~/.cshrc
   echo "Application added to the path"
