@@ -60,7 +60,7 @@ def chat_loop(question: str, model: str = possible_models[0], context: str = "Be
 	chat_payload = {
 		"model": model
 	}
-	if model in possible_models:
+	if model in possible_models and context: #ie offline model
 		chat_payload["messages"] = [
 				{
 					"role": "system",
@@ -74,10 +74,21 @@ def chat_loop(question: str, model: str = possible_models[0], context: str = "Be
 		if (single_use == False):
 			print(color("You: ", "blue"), end="")
 			question = input()
-		if (question == "try again"):
-			model = possible_models[possible_models.index(model) + 1 % len(possible_models)]
-		if (question == "exit"):
-			exit()
+			if not question or question.lower() == "new chat":
+				newchat_bool = input("--> Start a new chat (y/n)? \n\t")
+				if newchat_bool.lower() == 'yes' or newchat_bool.lower() == 'y':
+					chat_payload["messages"] = []
+					print(color("---NEW CHAT---", "cyan"))
+				else:
+					print(color("/^.^\\ ", "purple" ) + "Lets continue our little chat")
+				continue
+			elif (question == "change model"):
+				print(color("/^.^\\ ", "purple" ))
+				model = pick_model("?")
+				print(color("/^.^\\ ", "purple" ) + "Using " + model + " now")
+				continue
+			elif (question == "exit"):
+				exit()
 		chat_payload["messages"].append({
 			"role": "user",
 			"content": question
@@ -99,7 +110,7 @@ def chat_loop(question: str, model: str = possible_models[0], context: str = "Be
 
 
 def main(): # params
-	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" :
+	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" or not sys.argv[1]:
 		print("welcome to the perplexity command line ai!")
 		print(f'''
 		This is a simple command line interface to interact with the perplexity api in one of two ways: 
