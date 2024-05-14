@@ -15,8 +15,8 @@ if not API_KEY:
 	print ("come back when you have a API_KEY")
 	exit()
 
-possible_models = ["sonar-small-chat", "sonar-medium-chat", "codellama-70b-instruct", "mistral-7b-instruct", "mixtral-8x7b-instruct"]
-online_models = ["sonar-small-online", "sonar-medium-online"]
+possible_models = ["llama-3-sonar-small-32k-chat", "llama-3-sonar-large-32k-chat", "llama-3-8b-instruct", "llama-3-70b-instruct", "mixtral-8x7b-instruct"]
+online_models = ["llama-3-sonar-small-32k-online", "llama-3-sonar-large-32k-online"]
 
 headers = {
 	"accept": "application/json",
@@ -36,33 +36,25 @@ def printAvailableModels():
 	for i in range(len(possible_models)):
 		print(f"		[{i}] - {possible_models[i]}")
 	print("\t Online models:")
-	print(f"		[so] - {online_models[0]}")
-	print(f"		[mo]- {online_models[1]}")
+	print(f"		so - {online_models[0]}")
+	print(f"		lo - {online_models[1]}")
 	
 
 def pick_model(model):
-	if model is None:
+	if not model:
 		return possible_models[0]
 	if model.isdigit() and int(model) < len(possible_models):
 		model = possible_models[int(model)]
 	if model is not None and (model in possible_models or model in online_models):
 		return model
-	if model == "so" or model == "mo":
+	if model == "so" or model == "lo":
 		return online_models[0] if model == "so" else online_models[1] 
 	if model != "?":
 		print(f'''Invalid model name, the model will be set to {possible_models[0]}''')
 		return possible_models[0]
 	printAvailableModels()
 	model = input(f'''Choose a model (press enter for {possible_models[0]}): ''')
-	if model.isdigit() and int(model) < len(possible_models):
-		model = possible_models[int(model)]
-	if model not in possible_models:
-		print(f'''Invalid model name, the model will be set to {possible_models[0]}''')
-		return possible_models[0]
-	else:
-		print("Model set to " + model)
-		model = model
-	return model
+	return pick_model(model)
 
 def chat_loop(question: str, model: str = possible_models[0], context: str = "Be precise and concise", single_use: bool = True):
 	chat_payload = {
@@ -115,12 +107,12 @@ def main(): # params
 		- chat with the bot.
 		To get a response to a question, use the following syntax:
 		- CMD "Question" "Model (Optinal)" "System prompt (Optinal)"
-		E.g. CMD "What is the capital of Nigeria?" "sonar-small-chat" "Be precise and concise" 
+		E.g. hi "What is the capital of Nigeria?" 0 "Be precise and concise" 
 		To chat with the bot, use the following syntax:
 		- CMD "chat" "Model (Optinal)" "System prompt (Optinal)"
-		E.g. CMD "chat" "sonar-small-chat" "Be precise and concise" 
+		E.g. hi "chat" 1 "Be precise and concise" 
 		To see the available models, use the following syntax:
-		- CMD "models"
+		- hi "models"
 		''')
 		printAvailableModels()
 		print(f'''
