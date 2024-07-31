@@ -15,8 +15,8 @@ if not API_KEY:
 	print ("come back when you have a API_KEY")
 	exit()
 
-possible_models = ["llama-3-sonar-small-32k-chat", "llama-3-sonar-large-32k-chat", "llama-3-8b-instruct", "llama-3-70b-instruct", "mixtral-8x7b-instruct"]
-online_models = ["llama-3-sonar-small-32k-online", "llama-3-sonar-large-32k-online"]
+possible_models = ["llama-3.1-sonar-small-128k-chat", "llama-3.1-sonar-large-128k-chat"]
+online_models = ["llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online"]
 
 headers = {
 	"accept": "application/json",
