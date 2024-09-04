@@ -108,6 +108,20 @@ def chat_loop(question: str, model: str = possible_models[0], context: str = "Be
 		print(color("/^.^\\ ", "purple" ) + message)
 
 
+def read_promt():
+	prompt = sys.argv[1]
+	if not sys.stdin.isatty():
+		bits = []
+		stdin_prompt = sys.stdin.read()
+		if prompt:
+			bits.append(prompt)
+			bits.append("\n```\n")
+			bits.append(stdin_prompt)
+			bits.append("\n```")
+		elif stdin_prompt:
+			bits.append(stdin_prompt)
+		prompt = "".join(bits)
+	return prompt
 
 def main(): # params
 	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" or not sys.argv[1]:
@@ -131,7 +145,7 @@ def main(): # params
 		''')
 		exit()
 
-	question = sys.argv[1]
+	question = read_promt() # sys.argv[1]
 	model = pick_model(sys.argv[2] if len(sys.argv) > 2 else None)
 	context = sys.argv[3] if len(sys.argv) > 3 else "Be precise and concise"
 
