@@ -10,8 +10,10 @@ except ImportError:
 API_KEY_ENV_VAR = 'PERPLEXITY_API_KEY'
 API_KEY = os.getenv(API_KEY_ENV_VAR)
 API_URL = 'https://api.perplexity.ai/chat/completions'
-AVAILABLE_MODELS = ["llama-3.1-sonar-small-128k-chat", "llama-3.1-sonar-large-128k-chat"]
-ONLINE_MODELS = ["llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online"]
+AVAILABLE_MODELS = ["llama-3.1-sonar-small-128k-chat", "llama-3.1-sonar-large-128k-chat"
+					, "llama-3.1-8b-instruct", "llama-3.1-70b-instruct"]
+ONLINE_MODELS = ["llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online",
+				  "llama-3.1-sonar-huge-128k-online"]
 DEFAULT_CONTEXT = "Be precise and concise"
 HEADERS = {
 	"accept": "application/json",
@@ -29,7 +31,7 @@ if not API_KEY:
 
 def color(text, color):
 	if 'rich' in sys.modules:
-		return f"[{color}]{text}\033[0m"
+		return f"[{color}]{text}\033"
 	return text
 
 def printAvailableModels():
@@ -39,6 +41,7 @@ def printAvailableModels():
 	print("\t Online models:")
 	print(f"		so - {ONLINE_MODELS[0]}")
 	print(f"		lo - {ONLINE_MODELS[1]}")
+	print(f"		ho - {ONLINE_MODELS[2]}")
 	
 
 def pick_model(model):
@@ -48,45 +51,47 @@ def pick_model(model):
 		model = AVAILABLE_MODELS[int(model)]
 	if model is not None and (model in AVAILABLE_MODELS or model in ONLINE_MODELS):
 		return model
-	if model == "so" or model == "lo":
-		return ONLINE_MODELS[0] if model == "so" else ONLINE_MODELS[1] 
-	if model != "?":
-		print(f'''Invalid model name, the model will be set to {AVAILABLE_MODELS[0]}''')
-		return AVAILABLE_MODELS[0]
-	printAvailableModels()
-	model = input(f'''Choose a model (press enter for {AVAILABLE_MODELS[0]}): ''')
-	return pick_model(model)
+	match model:
+		case "so":
+			return ONLINE_MODELS[0]
+		case "lo":
+			return ONLINE_MODELS[1]
+		case "ho":
+			return ONLINE_MODELS[2]
+		case _ if model != "?":
+			print(f'''Invalid model name, the model will be set to {AVAILABLE_MODELS[0]}''')
+			return AVAILABLE_MODELS[0]
+		case _:
+			printAvailableModels()
+			model = input(f'''Choose a model (press enter for {AVAILABLE_MODELS[0]}): ''')
+			return pick_model(model)
 
 def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DEFAULT_CONTEXT, single_use: bool = True):
 	chat_payload = {
-		"model": model
+		"model": model,
 	}
+	chat_payload["messages"] = []
 	if model in AVAILABLE_MODELS and context: #ie offline model
-		chat_payload["messages"] = [
-				{
-					"role": "system",
-					"content": context
-				}
-			]
-	else:
-		chat_payload["messages"] = []
-		single_use = True
+		chat_payload["messages"].append({
+			"role": "system",
+			"content": context
+		})
 	while (question != "exit"):
-		if (single_use == False):
+		if not single_use:
 			print(color("You: ", "blue"), end="")
 			question = input()
 			if not question or question.lower() == "new chat":
 				newchat_bool = input("--> Start a new chat (y/n)? \n\t")
-				if newchat_bool.lower() == 'yes' or newchat_bool.lower() == 'y':
+				if newchat_bool.lower() in ['yes', 'y']:
 					chat_payload["messages"] = []
 					print(color("---NEW CHAT---", "cyan"))
 				else:
-					print(color("/^.^\\ ", "purple" ) + "Lets continue our little chat")
+					print(color("/^.^\\ ", "purple" ) + " Lets continue our little chat")
 				continue
 			elif (question == "change model"):
 				print(color("/^.^\\ ", "purple" ))
 				model = pick_model("?")
-				print(color("/^.^\\ ", "purple" ) + "Using " + model + " now")
+				print(color("/^.^\\ ", "purple" ) + f"Using {model} now")
 				continue
 			elif (question == "exit"):
 				exit()
