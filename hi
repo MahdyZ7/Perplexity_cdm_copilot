@@ -171,8 +171,6 @@ def read_promt():
 	return prompt
 
 def main(): # params
-	update_api_key()
-	exit()
 	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" or not sys.argv[1]:
 		print("welcome to the perplexity command line ai!")
 		print(f'''
