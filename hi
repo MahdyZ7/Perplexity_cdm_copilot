@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import requests, os, sys
+import re, requests, os, sys
 
 try :
 	from rich import print
@@ -21,13 +21,57 @@ HEADERS = {
 	"authorization": "Bearer " + API_KEY
 }
 
+def testApiKey(api_key: str):
+	header = {
+		"authorization": "Bearer " + api_key
+	}
+	payload = {
+		"model": AVAILABLE_MODELS[0],
+		"messages": [{
+			"role": "user",
+			"content": "hi",
+		}],
+	}
+	response = requests.post(API_URL, json = payload, headers=header )
+	if response.status_code == 200:
+		return
+	print(color("Inavalid API Key. Get one and come back", "red"))
+	exit(1)
+	
+	
+
+# def update_api_key():
+# 	home = os.getenv("HOME")
+# 	new_key = input("New API Key: ")
+# 	env_var_name = "PERPLEXITY_API_KEY"
+# 	testApiKey(new_key)
+# 	shell_file = home + "/.bashrc"
+# 	# print(shell_file)
+# 	# exit()
+# 	with open(shell_file) as file:
+# 		lines = file.readlines()
+# 	updated_lines = []
+# 	api_key_line = None
+		
+# 	for line in lines:
+# 		# print(line)
+# 		if line.strip().find('PERPLEXITY_API_KEY=') != -1:
+# 			api_key_line = line.strip()
+# 			print(f"THE LINE IS THERE: {line}")
+# 			# updated_lines.append(f'PERPLEXITY_API_KEY={new_key}')
+		
+# 	updated_lines.append(line)
+# 	# if api_key_line:
+# 	lines = updated_lines[-1]
+# 	print(f"--Lines--\n {lines}")
+# 	exit	
+	# with open("./bashrc", 'w') as file:
+	# 	file.writelines(updated_lines)
+
 if not API_KEY:
 	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
 	print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
-	print("Then set the API key using the following command:")
-	print("	export PERPLEXITY_API_KEY=your_api_key")
-	print ("come back when you have a API_KEY")
-	exit()
+	update_api_key()
 
 def color(text, color):
 	if 'rich' in sys.modules:
@@ -127,6 +171,8 @@ def read_promt():
 	return prompt
 
 def main(): # params
+	update_api_key()
+	exit()
 	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" or not sys.argv[1]:
 		print("welcome to the perplexity command line ai!")
 		print(f'''
