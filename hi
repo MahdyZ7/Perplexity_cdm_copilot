@@ -21,52 +21,6 @@ HEADERS = {
 	"authorization": "Bearer " + API_KEY
 }
 
-def testApiKey(api_key: str):
-	header = {
-		"authorization": "Bearer " + api_key
-	}
-	payload = {
-		"model": AVAILABLE_MODELS[0],
-		"messages": [{
-			"role": "user",
-			"content": "hi",
-		}],
-	}
-	response = requests.post(API_URL, json = payload, headers=header )
-	if response.status_code == 200:
-		return
-	print(color("Inavalid API Key. Get one and come back", "red"))
-	exit(1)
-	
-	
-
-# def update_api_key():
-# 	home = os.getenv("HOME")
-# 	new_key = input("New API Key: ")
-# 	env_var_name = "PERPLEXITY_API_KEY"
-# 	testApiKey(new_key)
-# 	shell_file = home + "/.bashrc"
-# 	# print(shell_file)
-# 	# exit()
-# 	with open(shell_file) as file:
-# 		lines = file.readlines()
-# 	updated_lines = []
-# 	api_key_line = None
-		
-# 	for line in lines:
-# 		# print(line)
-# 		if line.strip().find('PERPLEXITY_API_KEY=') != -1:
-# 			api_key_line = line.strip()
-# 			print(f"THE LINE IS THERE: {line}")
-# 			# updated_lines.append(f'PERPLEXITY_API_KEY={new_key}')
-		
-# 	updated_lines.append(line)
-# 	# if api_key_line:
-# 	lines = updated_lines[-1]
-# 	print(f"--Lines--\n {lines}")
-# 	exit	
-	# with open("./bashrc", 'w') as file:
-	# 	file.writelines(updated_lines)
 
 if not API_KEY:
 	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
@@ -206,3 +160,42 @@ def main(): # params
 
 if __name__ == "__main__":
 	main()
+
+def testApiKey(api_key: str):
+	header = {
+		"authorization": "Bearer " + api_key
+	}
+	payload = {
+		"model": AVAILABLE_MODELS[0],
+		"messages": [{
+			"role": "user",
+			"content": "hi",
+		}],
+	}
+	response = requests.post(API_URL, json = payload, headers=header )
+	if response.status_code == 200:
+		return
+	print(color("Inavalid API Key. Get one and come back", "red"))
+	exit(1)
+	
+	
+
+def update_api_key():
+	try:
+		home = os.getenv("HOME")
+		env_var_name = "PERPLEXITY_API_KEY"
+		new_key = input("New API Key: ")
+		testApiKey(new_key)
+		if home is None:
+			print(color("Failed to add API to shell settings", "red"))
+		elif os.path.isfile(home + "/.bashrc"):
+			with open( home + "/.bashrc", 'a') as file:
+				file.write(f"export {env_var_name}={new_key}")
+			print(color(f"enviroment variable {env_var_name} added to bash", "green"))
+		elif os.path.isfile(home + "/.cshrc"):
+			with open( home + "/.cshrc", 'a') as file:
+				file.write(f"setenv {env_var_name} {new_key}")
+			print(color(f"enviroment variable {env_var_name} added to csh", "green"))
+		os.environ[env_var_name] = new_key
+	except:
+		print(color(f"Failed to accept api key. Please add {env_var_name} to the enviroment manually)", "red"))
