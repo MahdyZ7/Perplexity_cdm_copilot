@@ -35,6 +35,11 @@ hi models
 hi "What is the capital of France?" 2 "give a single sentence answer"
 ```
 
+The program can read from standard input to allow for piping input
+```bash
+cat code.py | hi "explain the function fetchData() in the code"
+```
+
 for more information on the available options, run the following command:
 ```bash
 hi help
