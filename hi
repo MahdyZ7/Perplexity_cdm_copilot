@@ -22,6 +22,49 @@ HEADERS = {
 	"authorization": "Bearer " + API_KEY
 }
 
+def testApiKey(api_key: str):
+	header = {
+		"authorization": "Bearer " + api_key
+	}
+	payload = {
+		"model": AVAILABLE_MODELS[0],
+		"messages": [{
+			"role": "user",
+			"content": "hi",
+		}],
+	}
+	response = requests.post(API_URL, json = payload, headers=header )
+	if response.status_code == 200:
+		return
+	print(color("Inavalid API Key. Get one and come back", "red"))
+	exit(1)
+	
+	
+
+def update_api_key():
+	try:
+		home = os.getenv("HOME")
+		env_var_name = "PERPLEXITY_API_KEY"
+		new_key = input("New API Key: ")
+		testApiKey(new_key)
+		if home is None:
+			print(color("Failed to add API to shell settings", "red"))
+		elif os.path.isfile(home + "/.bashrc"):
+			with open( home + "/.bashrc", 'a') as file:
+				file.write(f"export {env_var_name}={new_key}\n")
+			print(color(f"enviroment variable {env_var_name} added to bash", "green"))
+		elif os.path.isfile(home + "/.cshrc"):
+			with open( home + "/.cshrc", 'a') as file:
+				file.write(f"setenv {env_var_name} {new_key}\n")
+			print(color(f"enviroment variable {env_var_name} added to csh", "green"))
+		os.environ[env_var_name] = new_key
+		HEADERS["authorization"] =  "Bearer " + new_key
+		print("_" * 100)
+		print(">", end=" ")
+	except:
+		print(color(f"Failed to accept api key. Please add {env_var_name} to the enviroment manually)", "red"))
+		exit(1)
+
 def update():
 	command_string = ["git" , "pull", "-q"]
 	try:
@@ -31,23 +74,23 @@ def update():
 			print(color("Error: Could not find the path to 'hi' command. \
 Check that you have installed hi first", "red"))
 			exit()
-		print (subprocess.run(command_string, cwd=directory, capture_output=True, text=True, check=True ))
+		subprocess.run(command_string, cwd=directory, capture_output=True, text=True, check=True )
+		print(color("Update run successfully", "green"))
 	except subprocess.CalledProcessError as e:
 		print(f"Could not update {e}")
 
 def install():
 	subprocess.run("cd $(dirname $(which hi)) ; ./install.sh" )
 
-
-if not API_KEY:
-	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
-	print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
-	# update_api_key()
-
 def color(text, color):
 	if 'rich' in sys.modules:
 		return f"[{color}]{text}\033"
 	return text
+
+if not API_KEY:
+	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
+	print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
+	update_api_key()
 
 def printAvailableModels():
 	print("\t Available models:")
@@ -150,7 +193,7 @@ def read_promt():
 	return prompt
 
 def main(): # params
-	if len(sys.argv) > 1 and sys.argv[1].tolower() == "update":
+	if len(sys.argv) > 1 and sys.argv[1].lower() == "update":
 		update()
 		exit()
 	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" or not sys.argv[1]:
@@ -189,41 +232,3 @@ def main(): # params
 if __name__ == "__main__":
 	main()
 
-def testApiKey(api_key: str):
-	header = {
-		"authorization": "Bearer " + api_key
-	}
-	payload = {
-		"model": AVAILABLE_MODELS[0],
-		"messages": [{
-			"role": "user",
-			"content": "hi",
-		}],
-	}
-	response = requests.post(API_URL, json = payload, headers=header )
-	if response.status_code == 200:
-		return
-	print(color("Inavalid API Key. Get one and come back", "red"))
-	exit(1)
-	
-	
-
-def update_api_key():
-	try:
-		home = os.getenv("HOME")
-		env_var_name = "PERPLEXITY_API_KEY"
-		new_key = input("New API Key: ")
-		testApiKey(new_key)
-		if home is None:
-			print(color("Failed to add API to shell settings", "red"))
-		elif os.path.isfile(home + "/.bashrc"):
-			with open( home + "/.bashrc", 'a') as file:
-				file.write(f"export {env_var_name}={new_key}")
-			print(color(f"enviroment variable {env_var_name} added to bash", "green"))
-		elif os.path.isfile(home + "/.cshrc"):
-			with open( home + "/.cshrc", 'a') as file:
-				file.write(f"setenv {env_var_name} {new_key}")
-			print(color(f"enviroment variable {env_var_name} added to csh", "green"))
-		os.environ[env_var_name] = new_key
-	except:
-		print(color(f"Failed to accept api key. Please add {env_var_name} to the enviroment manually)", "red"))
