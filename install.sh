@@ -6,7 +6,7 @@
 set -o errexit
 
 # check the if the terminal is bash or csh
-if [[ $# -eq 0 ]] ; then
+if [ $# -eq 0 ] ; then
 	echo 'Add the perplexity API key as an argument, you can get one form "https://www.perplexity.ai/settings/api"'
 	exit 0
 fi
