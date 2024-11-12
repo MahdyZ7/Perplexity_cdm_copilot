@@ -64,6 +64,13 @@ def pick_model(model):
 			model = input(f'''Choose a model (press enter for {AVAILABLE_MODELS[0]}): ''')
 			return pick_model(model)
 
+def printCitations(response, model: str):
+	citations = response.json()["citations"] if model in ONLINE_MODELS else None
+	if citations:
+		print("_" * 100)
+	for index, source in enumerate(citations):
+		print(f"[{index}] {source}")
+
 def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DEFAULT_CONTEXT, single_use: bool = True):
 	chat_payload = {
 		"model": model,
@@ -108,6 +115,7 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 		message = response.json()["choices"][0]["message"]["content"]
 		if (single_use):
 			print(message)
+			printCitations(response, model)
 			return
 		print(color("/^.^\\ ", "purple" ) + message)
 
