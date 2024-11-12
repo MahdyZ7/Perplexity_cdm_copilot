@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import re, requests, os, sys
+import subprocess
 
 try :
 	from rich import print
@@ -8,7 +9,7 @@ except ImportError:
 
 # Constants
 API_KEY_ENV_VAR = 'PERPLEXITY_API_KEY'
-API_KEY = os.getenv(API_KEY_ENV_VAR)
+API_KEY = os.getenv(API_KEY_ENV_VAR) or ""
 API_URL = 'https://api.perplexity.ai/chat/completions'
 AVAILABLE_MODELS = ["llama-3.1-sonar-small-128k-chat", "llama-3.1-sonar-large-128k-chat"
 					, "llama-3.1-8b-instruct", "llama-3.1-70b-instruct"]
@@ -21,11 +22,27 @@ HEADERS = {
 	"authorization": "Bearer " + API_KEY
 }
 
+def update():
+	command_string = ["git" , "pull", "-q"]
+	try:
+		directory: str = subprocess.run(["dirname", subprocess.run(["which",  "hi"], capture_output=True 
+).stdout], capture_output=True, text=True).stdout.strip("\n")
+		if directory == "." or directory is None:
+			print(color("Error: Could not find the path to 'hi' command. \
+Check that you have installed hi first", "red"))
+			exit()
+		print (subprocess.run(command_string, cwd=directory, capture_output=True, text=True, check=True ))
+	except subprocess.CalledProcessError as e:
+		print(f"Could not update {e}")
+
+def install():
+	subprocess.run("cd $(dirname $(which hi)) ; ./install.sh" )
+
 
 if not API_KEY:
 	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
 	print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
-	update_api_key()
+	# update_api_key()
 
 def color(text, color):
 	if 'rich' in sys.modules:
@@ -68,8 +85,8 @@ def printCitations(response, model: str):
 	citations = response.json()["citations"] if model in ONLINE_MODELS else None
 	if citations:
 		print("_" * 100)
-	for index, source in enumerate(citations):
-		print(f"[{index}] {source}")
+		for index, source in enumerate(citations):
+			print(f"[{index}] {source}")
 
 def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DEFAULT_CONTEXT, single_use: bool = True):
 	chat_payload = {
@@ -133,6 +150,9 @@ def read_promt():
 	return prompt
 
 def main(): # params
+	if len(sys.argv) > 1 and sys.argv[1].tolower() == "update":
+		update()
+		exit
 	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" or not sys.argv[1]:
 		print("welcome to the perplexity command line ai!")
 		print(f'''
