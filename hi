@@ -5,15 +5,15 @@ import subprocess
 try :
 	from rich import print
 except ImportError:
-	pass
+	from builtins import print
 
 # Constants
 API_KEY_ENV_VAR = 'PERPLEXITY_API_KEY'
 API_KEY = os.getenv(API_KEY_ENV_VAR) or ""
 API_URL = 'https://api.perplexity.ai/chat/completions'
-AVAILABLE_MODELS = ["llama-3.1-sonar-small-128k-chat", "llama-3.1-sonar-large-128k-chat"
-					, "llama-3.1-8b-instruct", "llama-3.1-70b-instruct"]
-ONLINE_MODELS = ["llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online",
+# AVAILABLE_MODELS = ["llama-3.1-sonar-small-128k-chat", "llama-3.1-sonar-large-128k-chat"
+# 					, "llama-3.1-8b-instruct", "llama-3.1-70b-instruct"]
+AVAILABLE_MODELS = ["llama-3.1-sonar-small-128k-online", "llama-3.1-sonar-large-128k-online",
 				  "llama-3.1-sonar-huge-128k-online"]
 DEFAULT_CONTEXT = "Be precise and concise"
 HEADERS = {
@@ -42,9 +42,9 @@ def testApiKey(api_key: str):
 	
 
 def update_api_key():
+	env_var_name = "PERPLEXITY_API_KEY"
 	try:
 		home = os.getenv("HOME")
-		env_var_name = "PERPLEXITY_API_KEY"
 		new_key = input("New API Key: ")
 		testApiKey(new_key)
 		if home is None:
@@ -96,26 +96,22 @@ def printAvailableModels():
 	print("\t Available models:")
 	for i in range(len(AVAILABLE_MODELS)):
 		print(f"		[{i}] - {AVAILABLE_MODELS[i]}")
-	print("\t Online models:")
-	print(f"		so - {ONLINE_MODELS[0]}")
-	print(f"		lo - {ONLINE_MODELS[1]}")
-	print(f"		ho - {ONLINE_MODELS[2]}")
 	
 
-def pick_model(model):
+def pick_model(model: str):
 	if not model:
 		return AVAILABLE_MODELS[0]
-	if model.isdigit() and int(model) < len(AVAILABLE_MODELS):
-		model = AVAILABLE_MODELS[int(model)]
-	if model is not None and (model in AVAILABLE_MODELS or model in ONLINE_MODELS):
+	if model is not None and (model in AVAILABLE_MODELS):
 		return model
-	match model:
-		case "so":
-			return ONLINE_MODELS[0]
-		case "lo":
-			return ONLINE_MODELS[1]
-		case "ho":
-			return ONLINE_MODELS[2]
+	match model.lower():
+		case "s" | "so" | "small" | "0":
+			return AVAILABLE_MODELS[0]
+		case "l" | "lo" | "long" | "1":
+			return AVAILABLE_MODELS[1]
+		case "h" | "ho" | "huge" | "2":
+			return AVAILABLE_MODELS[2]
+		case _ if model in AVAILABLE_MODELS:
+			return model
 		case _ if model != "?":
 			print(f'''Invalid model name, the model will be set to {AVAILABLE_MODELS[0]}''')
 			return AVAILABLE_MODELS[0]
@@ -125,9 +121,9 @@ def pick_model(model):
 			return pick_model(model)
 
 def printCitations(response, model: str):
-	citations = response.json()["citations"] if model in ONLINE_MODELS else None
+	citations = response.json()["citations"] if response.json()["citations"] else None
 	if citations:
-		print("_" * 100)
+		print("_" * 3)
 		for index, source in enumerate(citations):
 			print(f"[{index}] {source}")
 
@@ -136,7 +132,7 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 		"model": model,
 	}
 	chat_payload["messages"] = []
-	if model in AVAILABLE_MODELS and context: #ie offline model
+	if model in AVAILABLE_MODELS and context:
 		chat_payload["messages"].append({
 			"role": "system",
 			"content": context
@@ -218,7 +214,7 @@ def main(): # params
 		exit()
 
 	question = read_promt() # sys.argv[1]
-	model = pick_model(sys.argv[2] if len(sys.argv) > 2 else None)
+	model = pick_model(sys.argv[2] if len(sys.argv) > 2 else "0")
 	context = sys.argv[3] if len(sys.argv) > 3 else DEFAULT_CONTEXT
 
 	if question == "models":
