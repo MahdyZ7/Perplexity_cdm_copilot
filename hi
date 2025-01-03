@@ -147,12 +147,12 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 					chat_payload["messages"] = []
 					print(color("---NEW CHAT---", "cyan"))
 				else:
-					print(color("/^.^\\ ", "purple" ) + " Lets continue our little chat")
+					print(color("/^.^\\ Lets continue our little chat", "purple"))
 				continue
 			elif (question == "change model"):
 				print(color("/^.^\\ ", "purple" ))
 				model = pick_model("?")
-				print(color("/^.^\\ ", "purple" ) + f"Using {model} now")
+				print(color(f"/^.^\\ Using {model} now", "purple" ))
 				continue
 			elif (question == "exit"):
 				exit()
@@ -162,7 +162,7 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 		})
 		response = requests.post(API_URL, json=chat_payload, headers=HEADERS)
 		if response.status_code != 200:
-			print(color("Error: " + response.text, "red"))
+			print(color(f"Error:  {response.text}", "red"))
 			exit()
 		chat_payload["messages"].append({
 			"role": "assistant",
@@ -173,7 +173,8 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 			print(message)
 			printCitations(response, model)
 			return
-		print(color("/^.^\\ ", "purple" ) + message)
+		print(color(f"/^.^\\ {message}", "purple" ))
+		printCitations(response, model)
 
 
 def read_promt():
@@ -227,4 +228,3 @@ def main(): # params
 
 if __name__ == "__main__":
 	main()
-
