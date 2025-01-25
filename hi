@@ -16,30 +16,29 @@ DEFAULT_CONTEXT = "Be precise and concise"
 HEADERS = {
 	"accept": "application/json",
 	"content-type": "application/json",
-	"authorization": "Bearer " + API_KEY
+	"authorization": f"Bearer {API_KEY}"
 }
 
-def testApiKey(api_key: str):
-	header = {
-		"authorization": "Bearer " + api_key
-	}
+def testApiKey(api_key: str)  -> None:
+	HEADERS["authorization"] =  "Bearer " + api_key
 	payload = {
 		"model": AVAILABLE_MODELS[0],
 		"messages": [{
 			"role": "user",
 			"content": "hi",
 		}],
+		"max_tokens": 1,
 	}
-	response = requests.post(API_URL, json = payload, headers=header )
+	response = requests.post(API_URL, json = payload, headers=HEADERS)
 	if response.status_code == 200:
+		print(color("API Key is valid", "green"))
 		return
 	print(color("Inavalid API Key. Get one and come back", "red"))
 	exit(1)
 	
 	
 
-def update_api_key():
-	env_var_name = "PERPLEXITY_API_KEY"
+def update_api_key() -> None:
 	try:
 		home = os.getenv("HOME")
 		new_key = input("New API Key: ")
@@ -48,21 +47,21 @@ def update_api_key():
 			print(color("Failed to add API to shell settings", "red"))
 		elif os.path.isfile(home + "/.bashrc"):
 			with open( home + "/.bashrc", 'a') as file:
-				file.write(f"export {env_var_name}={new_key}\n")
-			print(color(f"enviroment variable {env_var_name} added to bash", "green"))
+				file.write(f"export {API_KEY_ENV_VAR}={new_key}\n")
+			print(color(f"enviroment variable {API_KEY_ENV_VAR} added to bash", "green"))
 		elif os.path.isfile(home + "/.cshrc"):
 			with open( home + "/.cshrc", 'a') as file:
-				file.write(f"setenv {env_var_name} {new_key}\n")
-			print(color(f"enviroment variable {env_var_name} added to csh", "green"))
-		os.environ[env_var_name] = new_key
-		HEADERS["authorization"] =  "Bearer " + new_key
+				file.write(f"setenv {API_KEY_ENV_VAR} {new_key}\n")
+			print(color(f"enviroment variable {API_KEY_ENV_VAR} added to csh", "green"))
+		os.environ[API_KEY_ENV_VAR] = new_key
+		HEADERS["authorization"] =  f"Bearer {new_key}"
 		print("_" * 100)
 		print(">", end=" ")
-	except:
-		print(color(f"Failed to accept api key. Please add {env_var_name} to the enviroment manually)", "red"))
+	except Exception as e:
+		print(color(f"Failed to accept API key: {e}. Please add {API_KEY_ENV_VAR} to the enviroment manually)", "red"))
 		exit(1)
 
-def update():
+def update() -> None:
 	command_string = ["git" , "pull", "-q"]
 	try:
 		directory: str = subprocess.run(["dirname", subprocess.run(["which",  "hi"], capture_output=True 
@@ -79,7 +78,7 @@ Check that you have installed hi first", "red"))
 def install():
 	subprocess.run("cd $(dirname $(which hi)) ; ./install.sh" )
 
-def color(text, color):
+def color(text, color) -> str:
 	if 'rich' in sys.modules:
 		return f"[{color}]{text}\033"
 	return text
@@ -95,44 +94,42 @@ def printAvailableModels():
 		print(f"		[{i}] - {AVAILABLE_MODELS[i]}")
 	
 
-def pick_model(model: str):
+def pick_model(model: str) -> str:
 	if not model:
 		return AVAILABLE_MODELS[0]
-	if model is not None and (model in AVAILABLE_MODELS):
+	if model in AVAILABLE_MODELS:
 		return model
 	match model.lower():
 		case "s" | "so" | "small" | "0":
 			return AVAILABLE_MODELS[0]
 		case "l" | "lo" | "long" | "1" | "pro":
 			return AVAILABLE_MODELS[1]
-		case _ if model in AVAILABLE_MODELS:
-			return model
-		case _ if model != "?":
-			print(f'''Invalid model name, the model will be set to {AVAILABLE_MODELS[0]}''')
-			return AVAILABLE_MODELS[0]
-		case _:
+		case "?" | "help" | "h" | "models":
 			printAvailableModels()
 			model = input(f'''Choose a model (press enter for {AVAILABLE_MODELS[0]}): ''')
 			return pick_model(model)
+		case _:
+			print(f'''Invalid model name, the model will be set to {AVAILABLE_MODELS[0]}''')
+			return AVAILABLE_MODELS[0]
 
-def printCitations(response, model: str):
+def printCitations(response, model: str) -> None:
 	citations = response.json()["citations"] if response.json()["citations"] else None
 	if citations:
 		print("_" * 3)
 		for index, source in enumerate(citations):
 			print(f"[{index}] {source}")
 
-def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DEFAULT_CONTEXT, single_use: bool = True):
+def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DEFAULT_CONTEXT, single_use: bool = True) -> None:
 	chat_payload = {
 		"model": model,
+		"messages": []
 	}
-	chat_payload["messages"] = []
-	if model in AVAILABLE_MODELS and context:
+	if context:
 		chat_payload["messages"].append({
 			"role": "system",
 			"content": context
 		})
-	while (question != "exit"):
+	while question != "exit":
 		if not single_use:
 			print(color("You: ", "blue"), end="")
 			question = input()
@@ -159,11 +156,11 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 		if response.status_code != 200:
 			print(color(f"Error:  {response.text}", "red"))
 			exit()
+		message = response.json()["choices"][0]["message"]["content"]
 		chat_payload["messages"].append({
 			"role": "assistant",
-			"content": response.json()["choices"][0]["message"]["content"]
+			"content": message
 		})
-		message = response.json()["choices"][0]["message"]["content"]
 		if (single_use):
 			print(message)
 			printCitations(response, model)
@@ -172,16 +169,14 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 		printCitations(response, model)
 
 
-def read_promt():
+def read_promt() -> str:
 	prompt = sys.argv[1]
 	if not sys.stdin.isatty():
 		stdin_prompt = sys.stdin.read()
 		if prompt:
-			prompt += ("\n````\n")
-			prompt += (stdin_prompt)
-			prompt += ("\n````")
+			return(f"{prompt}\n````\n{stdin_prompt}\n````")
 		elif stdin_prompt:
-			prompt = stdin_prompt
+			return(stdin_prompt)
 	return prompt
 
 def main(): # params
