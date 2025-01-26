@@ -113,8 +113,8 @@ def pick_model(model: str) -> str:
 			return AVAILABLE_MODELS[0]
 
 def printCitations(response, model: str) -> None:
-	citations = response.json()["citations"] if response.json()["citations"] else None
-	if citations:
+	citations = response.json().get('citations')
+	if citations is not None:
 		print("_" * 3)
 		for index, source in enumerate(citations):
 			print(f"[{index}] {source}")
@@ -152,7 +152,11 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 			"role": "user",
 			"content": question
 		})
-		response = requests.post(API_URL, json=chat_payload, headers=HEADERS)
+		try:
+			response = requests.post(API_URL, json=chat_payload, headers=HEADERS)
+		except requests.exceptions.RequestException as e:
+			print(color(f"Error: {e}", "red"))
+			exit()
 		if response.status_code != 200:
 			print(color(f"Error:  {response.text}", "red"))
 			exit()

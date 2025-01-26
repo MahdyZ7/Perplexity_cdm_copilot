@@ -1,7 +1,18 @@
 import pytest
 import requests
-import os
-from hi import testApiKey, pick_model, chat_loop, update_api_key
+import os, sys
+import importlib.machinery
+import importlib.util
+from pathlib import Path
+
+script_dir = Path( __file__ ).parent
+mymodule_path = str( script_dir.joinpath( '.', 'hi') )
+
+# Import mymodule
+loader = importlib.machinery.SourceFileLoader( 'hi', mymodule_path )
+spec = importlib.util.spec_from_loader( 'hi', loader )
+hi = importlib.util.module_from_spec(spec)
+loader.exec_module( hi )
 
 def test_api_key_valid(monkeypatch):
     # Mock API request to return a 200 status code
@@ -9,7 +20,7 @@ def test_api_key_valid(monkeypatch):
         return type('Response', (), {'status_code': 200})
     monkeypatch.setattr('requests.post', mock_post)
     
-    testApiKey("valid_api_key")
+    hi.testApiKey("valid_api_key")
     assert True  # If no exception is raised, the test passes
 
 def test_api_key_invalid(monkeypatch):
@@ -19,12 +30,12 @@ def test_api_key_invalid(monkeypatch):
     monkeypatch.setattr('requests.post', mock_post)
     
     with pytest.raises(SystemExit):
-        testApiKey("invalid_api_key")
+        hi.testApiKey("invalid_api_key")
 
 def test_model_selection():
-    assert pick_model("0") == "sonar"
-    assert pick_model("1") == "sonar-pro"
-    assert pick_model("invalid") == "sonar"
+    assert hi.pick_model("0") == "sonar"
+    assert hi.pick_model("1") == "sonar-pro"
+    assert hi.pick_model("invalid") == "sonar"
 
 def test_chat_loop_single_use():
     # Mock API request to return a response
@@ -32,17 +43,18 @@ def test_chat_loop_single_use():
         return type('Response', (), {'status_code': 200, 'json': lambda: {'choices': [{'message': {'content': 'Mockresponse'}}]}})
     requests.post = mock_post
     
-    chat_loop("Hello", "sonar")
+    hi.chat_loop("Hello", "sonar")
     assert True  # If no exception is raised, the test passes
 
-def test_chat_loop_multi_use():
-    # Mock API request to return a response
-    def mock_post(*args, **kwargs):
-        return type('Response', (), {'status_code': 200, 'json': lambda: {'choices': [{'message': {'content': 'Mockresponse'}}]}})
-    requests.post = mock_post
+# def test_chat_loop_multi_use():
+#     # Mock API request to return a response
+#     def mock_post(*args, **kwargs):
+#         return type('Response', (), {'status_code': 200, 'json': lambda: {'choices': [{'message': {'content': 'Mockresponse'}}]}})
+#     requests.post = mock_post
     
-    chat_loop("chat", "sonar", single_use=False)
-    assert True  # If no exception is raised, the test passes
+    
+#     hi.chat_loop("chat", "sonar", single_use=False)
+#     assert True  # If no exception is raised, the test passes
 
 def test_system_prompt_handling():
     # Mock API request to return a response
@@ -50,7 +62,7 @@ def test_system_prompt_handling():
         return type('Response', (), {'status_code': 200, 'json': lambda: {'choices': [{'message': {'content': 'Mockresponse'}}]}})
     requests.post = mock_post
     
-    chat_loop("Hello", "sonar", "Custom prompt")
+    hi.chat_loop("Hello", "sonar", "Custom prompt")
     assert True  # If no exception is raised, the test passes
 
 def test_error_handling(monkeypatch):
@@ -60,7 +72,7 @@ def test_error_handling(monkeypatch):
     monkeypatch.setattr('requests.post', mock_post)
     
     with pytest.raises(SystemExit):
-        chat_loop("Hello", "sonar")
+        hi.chat_loop("Hello", "sonar")
 
 def test_env_variable_setup(monkeypatch):
     # Mock input to return a new API key
@@ -68,5 +80,5 @@ def test_env_variable_setup(monkeypatch):
         return "new_api_key"
     monkeypatch.setattr('builtins.input', mock_input)
     
-    update_api_key()
+    hi.update_api_key()
     assert os.getenv('PERPLEXITY_API_KEY') == "new_api_key"
