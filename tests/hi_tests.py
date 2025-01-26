@@ -6,7 +6,7 @@ import importlib.util
 from pathlib import Path
 
 script_dir = Path( __file__ ).parent
-mymodule_path = str( script_dir.joinpath( '.', 'hi') )
+mymodule_path = str( script_dir.joinpath( '..', 'hi') )
 
 # Import mymodule
 loader = importlib.machinery.SourceFileLoader( 'hi', mymodule_path )
