@@ -22,3 +22,5 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/
+        env:
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
