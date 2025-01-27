@@ -12,9 +12,12 @@ mymodule_path = str( script_dir.joinpath( '..', 'hi') )
 
 # Import mymodule
 loader = importlib.machinery.SourceFileLoader( 'hi', mymodule_path )
-spec = importlib.util.spec_from_loader( 'hi', loader )
-hi = importlib.util.module_from_spec(spec)
-loader.exec_module( hi )
+spec = importlib.util.spec_from_loader('hi', loader)
+if spec is not None:
+	hi = importlib.util.module_from_spec(spec)
+	loader.exec_module(hi)
+else:
+	raise ImportError("Cannot load module 'hi'")
 
 # Configuration Tests
 def test_environment_variables():
