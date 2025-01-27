@@ -4,6 +4,8 @@ import os, sys
 import importlib.machinery
 import importlib.util
 from pathlib import Path
+from unittest.mock import patch, MagicMock
+from io import StringIO
 
 script_dir = Path( __file__ ).parent
 mymodule_path = str( script_dir.joinpath( '..', 'hi') )
@@ -14,71 +16,113 @@ spec = importlib.util.spec_from_loader( 'hi', loader )
 hi = importlib.util.module_from_spec(spec)
 loader.exec_module( hi )
 
-def test_api_key_valid(monkeypatch):
-    # Mock API request to return a 200 status code
-    def mock_post(*args, **kwargs):
-        return type('Response', (), {'status_code': 200})
-    monkeypatch.setattr('requests.post', mock_post)
-    
-    hi.testApiKey("valid_api_key")
-    assert True  # If no exception is raised, the test passes
+# Configuration Tests
+def test_environment_variables():
+	with patch.dict('os.environ', {'PERPLEXITY_API_KEY': 'test_key'}):
+		assert os.getenv('PERPLEXITY_API_KEY') == 'test_key'
 
-def test_api_key_invalid(monkeypatch):
-    # Mock API request to return a non-200 status code
-    def mock_post(*args, **kwargs):
-        return type('Response', (), {'status_code': 401})
-    monkeypatch.setattr('requests.post', mock_post)
-    
-    with pytest.raises(SystemExit):
-        hi.testApiKey("invalid_api_key")
+# API Key Tests
+@pytest.mark.parametrize("api_key,expected_status", [
+	("valid_key", 200),
+	("invalid_key", 401),
+])
+def test_api_key_validation(api_key, expected_status):
+	with patch('requests.post') as mock_post:
+		mock_response = MagicMock()
+		mock_response.status_code = expected_status
+		mock_post.return_value = mock_response
+		
+		if expected_status == 200:
+			hi.testApiKey(api_key)  # Should not raise exception
+		else:
+			with pytest.raises(SystemExit):
+				hi.testApiKey(api_key)
 
-def test_model_selection():
-    assert hi.pick_model("0") == "sonar"
-    assert hi.pick_model("1") == "sonar-pro"
-    assert hi.pick_model("invalid") == "sonar"
+# Model Selection Tests
+@pytest.mark.parametrize("input_model,expected_model", [
+	("s", "sonar"),
+	("pro", "sonar-pro"),
+	("invalid", "sonar"),
+	("", "sonar"),
+])
+def test_pick_model(input_model, expected_model):
+	assert hi.pick_model(input_model) == expected_model
 
+# Chat Loop Tests
 def test_chat_loop_single_use():
-    # Mock API request to return a response
-    def mock_post(*args, **kwargs):
-        return type('Response', (), {'status_code': 200, 'json': lambda: {'choices': [{'message': {'content': 'Mockresponse'}}]}})
-    requests.post = mock_post
-    
-    hi.chat_loop("Hello", "sonar")
-    assert True  # If no exception is raised, the test passes
+	with patch('requests.post') as mock_post:
+		mock_response = MagicMock()
+		mock_response.status_code = 200
+		mock_response.json.return_value = {
+			"choices": [{"message": {"content": "Test response"}}],
+			"citations": None
+		}
+		mock_post.return_value = mock_response
+		
+		with patch('sys.stdout', new=StringIO()) as fake_output:
+			hi.chat_loop("test question", "sonar", "give a breif answer", True)
+			assert "Test response" in fake_output.getvalue()
 
-# def test_chat_loop_multi_use():
-#     # Mock API request to return a response
-#     def mock_post(*args, **kwargs):
-#         return type('Response', (), {'status_code': 200, 'json': lambda: {'choices': [{'message': {'content': 'Mockresponse'}}]}})
-#     requests.post = mock_post
-    
-    
-#     hi.chat_loop("chat", "sonar", single_use=False)
-#     assert True  # If no exception is raised, the test passes
+# Input Processing Tests
+def test_read_prompt_with_stdin():
+	test_input = "test input from stdin"
+	with patch('sys.stdin') as mock_stdin:
+		mock_stdin.isatty.return_value = False
+		mock_stdin.read.return_value = test_input
+		with patch('sys.argv', ['script.py', 'prefix']):
+			result = hi.read_promt()
+			assert test_input in result
 
-def test_system_prompt_handling():
-    # Mock API request to return a response
-    def mock_post(*args, **kwargs):
-        return type('Response', (), {'status_code': 200, 'json': lambda: {'choices': [{'message': {'content': 'Mockresponse'}}]}})
-    requests.post = mock_post
-    
-    hi.chat_loop("Hello", "sonar", "Custom prompt")
-    assert True  # If no exception is raised, the test passes
+# Update Function Tests
+def test_update_function():
+	with patch('subprocess.run') as mock_run:
+		mock_run.return_value = MagicMock(stdout="test_path")
+		hi.update()
+		mock_run.assert_called()
 
-def test_error_handling(monkeypatch):
-    # Mock API request to raise an exception
-    def mock_post(*args, **kwargs):
-        raise requests.exceptions.RequestException
-    monkeypatch.setattr('requests.post', mock_post)
-    
-    with pytest.raises(SystemExit):
-        hi.chat_loop("Hello", "sonar")
+# Citation Handling Tests
+def test_print_citations():
+	mock_response = MagicMock()
+	mock_response.json.return_value = {
+		'citations': ['source1', 'source2']
+	}
+	with patch('sys.stdout', new=StringIO()) as fake_output:
+		hi.printCitations(mock_response, "sonar")
+		assert 'source1' in fake_output.getvalue()
+		assert 'source2' in fake_output.getvalue()
 
-def test_env_variable_setup(monkeypatch):
-    # Mock input to return a new API key
-    def mock_input(*args, **kwargs):
-        return "new_api_key"
-    monkeypatch.setattr('builtins.input', mock_input)
-    
-    hi.update_api_key()
-    assert os.getenv('PERPLEXITY_API_KEY') == "new_api_key"
+# Error Handling Tests
+def test_chat_loop_api_error():
+	with patch('requests.post') as mock_post:
+		mock_post.side_effect = requests.exceptions.RequestException("API Error")
+		with pytest.raises(SystemExit):
+			hi.chat_loop("test", "sonar", "be brief", True)
+
+# Integration Tests
+def test_main_function_help():
+	with patch('sys.argv', ['script.py', 'help']):
+		with patch('sys.stdout', new=StringIO()) as fake_output:
+			with pytest.raises(SystemExit):
+				hi.main()
+			assert "welcome to the perplexity command line ai" in fake_output.getvalue()
+
+@pytest.fixture
+def mock_environment():
+	with patch.dict('os.environ', {'PERPLEXITY_API_KEY': 'test_key'}):
+		yield
+
+def test_full_workflow(mock_environment):
+	with patch('requests.post') as mock_post:
+		mock_response = MagicMock()
+		mock_response.status_code = 200
+		mock_response.json.return_value = {
+			"choices": [{"message": {"content": "Test response"}}],
+			"citations": None
+		}
+		mock_post.return_value = mock_response
+		
+		with patch('sys.argv', ['script.py', 'test question']):
+			with patch('sys.stdout', new=StringIO()) as fake_output:
+				with patch('sys.stdin') as mock_stdin:
+					hi.main()
+					assert "Test response" in fake_output.getvalue()
