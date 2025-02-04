@@ -170,12 +170,12 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 			"role": "assistant",
 			"content": message
 		})
-		if (single_use):
-			print(message)
-			printCitations(response, model)
-			return
-		print(color(f"/^.^\\ {message}", "purple" ))
+		response_model = response.json()["model"]
+		print(color(f"{response_model}: ", "purple"), end="")
+		print(message)
 		printCitations(response, model)
+		if single_use:
+			return
 
 
 def read_promt() -> str:
