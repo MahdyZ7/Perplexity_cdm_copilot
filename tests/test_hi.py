@@ -65,6 +65,7 @@ def test_chat_loop_single_use():
 		mock_response.status_code = 200
 		mock_response.json.return_value = {
 			"choices": [{"message": {"content": "Test response"}}],
+			"model": "sonar",
 			"citations": None
 		}
 		mock_post.return_value = mock_response
@@ -127,6 +128,7 @@ def test_full_workflow(mock_environment):
 		mock_response.status_code = 200
 		mock_response.json.return_value = {
 			"choices": [{"message": {"content": "Test response"}}],
+			"model": "sonar",
 			"citations": None
 		}
 		mock_post.return_value = mock_response
