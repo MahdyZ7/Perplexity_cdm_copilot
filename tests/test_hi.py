@@ -47,6 +47,13 @@ def test_api_key_validation(api_key, expected_status):
 	("pro", "sonar-pro"),
 	("invalid", "sonar"),
 	("", "sonar"),
+	(None, "sonar"),
+	("r", "sonar-reasoning"),
+	("rp", "sonar-reasoning-pro"),
+	("0", "sonar"),
+	("1", "sonar-pro"),
+	("2", "sonar-reasoning"),
+	("3", "sonar-reasoning-pro"),
 ])
 def test_pick_model(input_model, expected_model):
 	assert hi.pick_model(input_model) == expected_model

@@ -11,7 +11,7 @@ except ImportError:
 API_KEY_ENV_VAR = 'PERPLEXITY_API_KEY'
 API_KEY = os.getenv(API_KEY_ENV_VAR) or ""
 API_URL = 'https://api.perplexity.ai/chat/completions'
-AVAILABLE_MODELS = ["sonar", "sonar-pro"]
+AVAILABLE_MODELS = ["sonar", "sonar-pro", "sonar-reasoning", "sonar-reasoning-pro"]
 DEFAULT_CONTEXT = "Be precise and concise"
 HEADERS = {
 	"accept": "application/json",
@@ -99,11 +99,16 @@ def pick_model(model: str) -> str:
 		return AVAILABLE_MODELS[0]
 	if model in AVAILABLE_MODELS:
 		return model
-	match model.lower():
+	model = model.lower()
+	match model:
 		case "s" | "so" | "small" | "0":
 			return AVAILABLE_MODELS[0]
 		case "l" | "lo" | "long" | "1" | "pro":
 			return AVAILABLE_MODELS[1]
+		case "r" | "re" | "res" | "reasoning" | "2":
+			return AVAILABLE_MODELS[2]
+		case "rp" | "r-pro" | "rpro" | "reasoning-pro" | "3":
+			return AVAILABLE_MODELS[3]
 		case "?" | "help" | "h" | "models":
 			printAvailableModels()
 			model = input(f'''Choose a model (press enter for {AVAILABLE_MODELS[0]}): ''')
