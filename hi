@@ -218,7 +218,6 @@ def main(): # params
 	parser.add_argument('-u', '--update', action='store_true', help='Update the hi command')
 	parser.add_argument('-m', '--model', type=str, help=f'Select the model type in api {AVAILABLE_MODELS}', default="0")
 	parser.add_argument('-c', '--context', type=str, help='The System prompt to use', default=DEFAULT_CONTEXT)
-	print(parser.parse_args())
 
 	args = parser.parse_args()
 	question = read_promt(args.question)
