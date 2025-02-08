@@ -111,11 +111,13 @@ def test_chat_loop_api_error():
 
 # Integration Tests
 def test_main_function_help():
-	with patch('sys.argv', ['script.py', 'help']):
-		with patch('sys.stdout', new=StringIO()) as fake_output:
-			with pytest.raises(SystemExit):
-				hi.main()
-			assert "welcome to the perplexity command line ai" in fake_output.getvalue()
+	with patch('sys.stdin') as mock_stdin:
+		mock_stdin.isatty.return_value = True
+		with patch('sys.argv', ['script.py', 'help']):
+			with patch('sys.stdout', new=StringIO()) as fake_output:
+				with pytest.raises(SystemExit):
+					hi.main()
+				assert "welcome to the perplexity command line ai" in fake_output.getvalue()
 
 @pytest.fixture
 def mock_environment():

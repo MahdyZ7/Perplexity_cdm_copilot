@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import re, requests, os, sys
 import subprocess
+import argparse
 
 try :
 	from rich import print
@@ -88,11 +89,14 @@ if not API_KEY:
 	print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
 	update_api_key()
 
-def printAvailableModels():
-	print("\t Available models:")
+def availableModels() -> str:
+	models = "\t Available models:\n"
 	for i in range(len(AVAILABLE_MODELS)):
-		print(f"		[{i}] - {AVAILABLE_MODELS[i]}")
-	
+		models += f"		[{i}] - {AVAILABLE_MODELS[i]}\n"
+	return models
+
+def printAvailableModels():
+	print(availableModels())
 
 def pick_model(model: str) -> str:
 	if not model:
@@ -178,8 +182,7 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 			return
 
 
-def read_promt() -> str:
-	prompt = sys.argv[1]
+def read_promt(prompt: str = "") -> str:
 	if not sys.stdin.isatty():
 		stdin_prompt = sys.stdin.read()
 		if prompt:
@@ -188,40 +191,50 @@ def read_promt() -> str:
 			return(stdin_prompt)
 	return prompt
 
+def description() -> str:
+	return (f'''welcome to the perplexity command line ai
+This is a simple command line interface to interact with the perplexity AI: 
+	- Get a response to a question
+		E.g. hi "What is the capital of Nigeria?" 0 {DEFAULT_CONTEXT} 
+		Use the following syntax:
+		- hi "Question" "Model (Optinal)" "System prompt (Optinal)"
+	- Chat with the bot:
+		E.g. hi "chat" 1 {DEFAULT_CONTEXT} 
+		- CMD "chat" "Model (Optinal)" "System prompt (Optinal)"
+		To exit the chat, type "exit" at any time.
+	To see the available models, use the following syntax:
+		- hi models
+{availableModels()}
+		''')
+
 def main(): # params
-	if len(sys.argv) > 1 and sys.argv[1].lower() == "update":
+	parser = argparse.ArgumentParser(
+		prog='hi',
+		formatter_class=argparse.RawDescriptionHelpFormatter,
+		description=description())
+	parser.add_argument('question', type=str, nargs='?', help='The question to ask the AI')
+	parser.add_argument('model', type=str, nargs='?', help='The model to use')
+	parser.add_argument('context', type=str, nargs='?', help='The context to use')
+	parser.add_argument('-u', '--update', action='store_true', help='Update the hi command')
+	parser.add_argument('-m', '--model', type=str, help=f'Select the model type in api {AVAILABLE_MODELS}', default="0")
+	parser.add_argument('-c', '--context', type=str, help='The System prompt to use', default=DEFAULT_CONTEXT)
+	print(parser.parse_args())
+
+	args = parser.parse_args()
+	question = read_promt(args.question)
+	model = pick_model(args.model)
+	context = args.context
+
+	if args.update or question == "update":
+		print("Updating hi")
 		update()
 		exit()
-	if len(sys.argv) < 2 or sys.argv[1] == "help" or sys.argv[1] == "?" or sys.argv[1] == "h" or sys.argv[1] == "about" or sys.argv[1] == "-h" or not sys.argv[1]:
-		print("welcome to the perplexity command line ai!")
-		print(f'''
-		This is a simple command line interface to interact with the perplexity api in one of two ways: 
-		- get a response to a question
-		- chat with the bot.
-		To get a response to a question, use the following syntax:
-		- CMD "Question" "Model (Optinal)" "System prompt (Optinal)"
-		E.g. hi "What is the capital of Nigeria?" 0 {DEFAULT_CONTEXT} 
-		To chat with the bot, use the following syntax:
-		- CMD "chat" "Model (Optinal)" "System prompt (Optinal)"
-		E.g. hi "chat" 1 {DEFAULT_CONTEXT} 
-		To see the available models, use the following syntax:
-		- hi "models"
-		''')
-		printAvailableModels()
-		print(f'''
-		To exit the chat, type "exit" at any time.
-		''')
+	if question.lower() == "help" or question == "h" or question == "?" or question == None:
+		print(description())
 		exit()
-
-	question = read_promt() # sys.argv[1]
-	model = pick_model(sys.argv[2] if len(sys.argv) > 2 else "0")
-	context = sys.argv[3] if len(sys.argv) > 3 else DEFAULT_CONTEXT
-
 	if question == "models":
-		print("Available models:" + str(AVAILABLE_MODELS))
+		print(availableModels())
 		exit()
-
-
 	single_use = False if question == "chat" else True
 	chat_loop(question, model, context, single_use)
 
