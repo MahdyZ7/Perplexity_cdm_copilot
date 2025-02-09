@@ -128,18 +128,28 @@ def printCitations(response, model: str) -> None:
 		for index, source in enumerate(citations):
 			print(f"[{index}] {source}")
 
-def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DEFAULT_CONTEXT, single_use: bool = True) -> None:
+def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DEFAULT_CONTEXT, args: argparse.Namespace = argparse.Namespace()) -> None:
 	chat_payload = {
 		"model": model,
 		"messages": []
 	}
+	if args.include:
+		chat_payload["search_domain_filter"] = args.include
+	elif args.exclude:
+		chat_payload["search_domain_filter"] = [f"-{domain}" for domain in args.exclude]
+	if args.recency:
+		chat_payload["search_recency_filter"] = args.recency
+	if args.related:
+		chat_payload["return_related_questions"] = True
+	print(f"hi\n {chat_payload}")
+	# exit()
 	if context:
 		chat_payload["messages"].append({
 			"role": "system",
 			"content": context
 		})
 	while question != "exit":
-		if not single_use:
+		if not args.single_use:
 			print(color("You: ", "blue"), end="")
 			question = input()
 			if not question or question.lower() == "new chat":
@@ -178,7 +188,10 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 		print(color(f"{response_model}: ", "purple"), end="")
 		print(message)
 		printCitations(response, model)
-		if single_use:
+		# if args.related:
+		# 	print(color("Related questions: ", "purple"), end="")
+		# 	print(response.json().get('related_questions'))
+		if args.single_use:
 			return
 
 
@@ -207,7 +220,7 @@ This is a simple command line interface to interact with the perplexity AI:
 {availableModels()}
 		''')
 
-def main(): # params
+def cliParsing():
 	parser = argparse.ArgumentParser(
 		prog='hi',
 		formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -219,7 +232,17 @@ def main(): # params
 	parser.add_argument('-m', '--model', type=str, help=f'Select the model type in api {AVAILABLE_MODELS}', default="0")
 	parser.add_argument('-c', '--context', type=str, help='The System prompt to use', default=DEFAULT_CONTEXT)
 
-	args = parser.parse_args()
+	domains = parser.add_mutually_exclusive_group()
+	domains.add_argument('-i', '--include', type=str, nargs='+' , help='The domain to use')
+	domains.add_argument('-e', '--exclude', type=str, nargs='+' , help='The domain not to use', )
+	parser.add_argument('-T', '--recency', type=str, choices=['month', 'week', 'day', 'hour'], help='Recency filter')
+	parser.add_argument('-R', '--related', action='store_true', help='Get related questions')
+	
+	return parser.parse_args()
+
+def main(): # params
+	args = cliParsing()
+	print(args)
 	question = read_promt(args.question)
 	model = pick_model(args.model)
 	context = args.context
@@ -228,14 +251,14 @@ def main(): # params
 		print("Updating hi")
 		update()
 		exit()
-	if question.lower() == "help" or question == "h" or question == "?" or question == None:
+	if question == None or question.lower() == "help" or question == "h" or question == "?":
 		print(description())
 		exit()
 	if question == "models":
 		print(availableModels())
 		exit()
-	single_use = False if question == "chat" else True
-	chat_loop(question, model, context, single_use)
+	args.single_use = False if question == "chat" else True
+	chat_loop(question, model, context, args)
 
 if __name__ == "__main__":
 	main()

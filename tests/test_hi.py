@@ -6,6 +6,7 @@ import importlib.util
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from io import StringIO
+import argparse
 
 script_dir = Path( __file__ ).parent
 mymodule_path = str( script_dir.joinpath( '..', 'hi') )
@@ -71,7 +72,9 @@ def test_chat_loop_single_use():
 		mock_post.return_value = mock_response
 		
 		with patch('sys.stdout', new=StringIO()) as fake_output:
-			hi.chat_loop("test question", "sonar", "give a breif answer", True)
+			args = hi.cliParsing()
+			args.single_use = True
+			hi.chat_loop("test question", "sonar", "give a breif answer", args)
 			assert "Test response" in fake_output.getvalue()
 
 # Input Processing Tests
@@ -107,7 +110,9 @@ def test_chat_loop_api_error():
 	with patch('requests.post') as mock_post:
 		mock_post.side_effect = requests.exceptions.RequestException("API Error")
 		with pytest.raises(SystemExit):
-			hi.chat_loop("test", "sonar", "be brief", True)
+			args = hi.cliParsing()
+			args.single_use = True
+			hi.chat_loop("test", "sonar", "be brief", args)
 
 # Integration Tests
 def test_main_function_help():
