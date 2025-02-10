@@ -1,148 +1,48 @@
 #!/usr/bin/python3
-import re, requests, os, sys
-import subprocess
+import requests, sys
 import argparse
+import hi_constants as CONST
+import hi_settings as settings
+import hi_help as help
 
 try :
 	from rich import print
 except ImportError:
 	from builtins import print
 
-# Constants
-API_KEY_ENV_VAR = 'PERPLEXITY_API_KEY'
-API_KEY = os.getenv(API_KEY_ENV_VAR) or ""
-API_URL = 'https://api.perplexity.ai/chat/completions'
-AVAILABLE_MODELS = ["sonar", "sonar-pro", "sonar-reasoning", "sonar-reasoning-pro"]
-DEFAULT_CONTEXT = "Be precise and concise"
-HEADERS = {
-	"accept": "application/json",
-	"content-type": "application/json",
-	"authorization": f"Bearer {API_KEY}"
-}
-
-def testApiKey(api_key: str)  -> None:
-	HEADERS["authorization"] =  "Bearer " + api_key
-	payload = {
-		"model": AVAILABLE_MODELS[0],
-		"messages": [{
-			"role": "user",
-			"content": "hi",
-		}],
-		"max_tokens": 1,
-	}
-	response = requests.post(API_URL, json = payload, headers=HEADERS)
-	if response.status_code == 200:
-		print(color("API Key is valid", "green"))
-		return
-	print(color("Inavalid API Key. Get one and come back", "red"))
-	exit(1)
-	
-	
-
-def update_api_key() -> None:
-	try:
-		home = os.getenv("HOME")
-		new_key = input("New API Key: ")
-		testApiKey(new_key)
-		if home is None:
-			print(color("Failed to add API to shell settings", "red"))
-		elif os.path.isfile(home + "/.bashrc"):
-			with open( home + "/.bashrc", 'a') as file:
-				file.write(f"export {API_KEY_ENV_VAR}={new_key}\n")
-			print(color(f"enviroment variable {API_KEY_ENV_VAR} added to bash", "green"))
-		elif os.path.isfile(home + "/.cshrc"):
-			with open( home + "/.cshrc", 'a') as file:
-				file.write(f"setenv {API_KEY_ENV_VAR} {new_key}\n")
-			print(color(f"enviroment variable {API_KEY_ENV_VAR} added to csh", "green"))
-		os.environ[API_KEY_ENV_VAR] = new_key
-		HEADERS["authorization"] =  f"Bearer {new_key}"
-		print("_" * 100)
-		print(">", end=" ")
-	except Exception as e:
-		print(color(f"Failed to accept API key: {e}. Please add {API_KEY_ENV_VAR} to the enviroment manually)", "red"))
-		exit(1)
-
-def update() -> None:
-	command_string = ["git" , "pull", "-q"]
-	try:
-		directory: str = subprocess.run(["dirname", subprocess.run(["which",  "hi"], capture_output=True 
-).stdout], capture_output=True, text=True).stdout.strip("\n")
-		if directory == "." or directory is None:
-			print(color("Error: Could not find the path to 'hi' command. \
-Check that you have installed hi first", "red"))
-			exit()
-		subprocess.run(command_string, cwd=directory, capture_output=True, text=True, check=True )
-		print(color("Update run successfully", "green"))
-	except subprocess.CalledProcessError as e:
-		print(f"Could not update {e}")
-
-def install():
-	subprocess.run("cd $(dirname $(which hi)) ; ./install.sh" )
 
 def color(text, color) -> str:
 	if 'rich' in sys.modules:
 		return f"[{color}]{text}\033"
 	return text
 
-if not API_KEY:
+if not CONST.API_KEY:
 	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
 	print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
-	update_api_key()
+	settings.update_api_key()
 
-def availableModels() -> str:
-	models = "\t Available models:\n"
-	for i in range(len(AVAILABLE_MODELS)):
-		models += f"		[{i}] - {AVAILABLE_MODELS[i]}\n"
-	return models
 
-def printAvailableModels():
-	print(availableModels())
-
-def pick_model(model: str) -> str:
-	if not model:
-		return AVAILABLE_MODELS[0]
-	if model in AVAILABLE_MODELS:
-		return model
-	model = model.lower()
-	match model:
-		case "s" | "so" | "small" | "0":
-			return AVAILABLE_MODELS[0]
-		case "l" | "lo" | "long" | "1" | "pro":
-			return AVAILABLE_MODELS[1]
-		case "r" | "re" | "res" | "reasoning" | "2":
-			return AVAILABLE_MODELS[2]
-		case "rp" | "r-pro" | "rpro" | "reasoning-pro" | "3":
-			return AVAILABLE_MODELS[3]
-		case "?" | "help" | "h" | "models":
-			printAvailableModels()
-			model = input(f'''Choose a model (press enter for {AVAILABLE_MODELS[0]}): ''')
-			return pick_model(model)
-		case _:
-			print(f'''Invalid model name, the model will be set to {AVAILABLE_MODELS[0]}''')
-			return AVAILABLE_MODELS[0]
-
-def printCitations(response, model: str) -> None:
+def printCitations(response) -> None:
 	citations = response.json().get('citations')
 	if citations is not None:
 		print("_" * 3)
 		for index, source in enumerate(citations):
-			print(f"[{index}] {source}")
+			print(f"[{index + 1}] {source}")
 
-def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DEFAULT_CONTEXT, args: argparse.Namespace = argparse.Namespace()) -> None:
+def chat_loop(question: str, model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.DEFAULT_CONTEXT, args: argparse.Namespace = argparse.Namespace()) -> None:
 	chat_payload = {
 		"model": model,
 		"messages": []
 	}
-	if args.include:
+
+	if args.__contains__("include") and args.include:
 		chat_payload["search_domain_filter"] = args.include
-	elif args.exclude:
+	elif args.__contains__("exclude") and args.exclude:
 		chat_payload["search_domain_filter"] = [f"-{domain}" for domain in args.exclude]
-	if args.recency:
+	if args.__contains__("recency") and args.recency:
 		chat_payload["search_recency_filter"] = args.recency
-	if args.related:
+	if args.__contains__("related") and args.related:
 		chat_payload["return_related_questions"] = True
-	print(f"hi\n {chat_payload}")
-	# exit()
 	if context:
 		chat_payload["messages"].append({
 			"role": "system",
@@ -162,7 +62,7 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 				continue
 			elif (question == "change model"):
 				print(color("/^.^\\ ", "purple" ))
-				model = pick_model("?")
+				model = help.pick_model("?")
 				print(color(f"/^.^\\ Using {model} now", "purple" ))
 				continue
 			elif (question == "exit"):
@@ -172,7 +72,7 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 			"content": question
 		})
 		try:
-			response = requests.post(API_URL, json=chat_payload, headers=HEADERS)
+			response = requests.post(CONST.API_URL, json=chat_payload, headers=CONST.HEADERS)
 		except requests.exceptions.RequestException as e:
 			print(color(f"Error: {e}", "red"))
 			exit()
@@ -187,7 +87,7 @@ def chat_loop(question: str, model: str = AVAILABLE_MODELS[0], context: str = DE
 		response_model = response.json()["model"]
 		print(color(f"{response_model}: ", "purple"), end="")
 		print(message)
-		printCitations(response, model)
+		printCitations(response)
 		# if args.related:
 		# 	print(color("Related questions: ", "purple"), end="")
 		# 	print(response.json().get('related_questions'))
@@ -204,33 +104,17 @@ def read_promt(prompt: str = "") -> str:
 			return(stdin_prompt)
 	return prompt
 
-def description() -> str:
-	return (f'''welcome to the perplexity command line ai
-This is a simple command line interface to interact with the perplexity AI: 
-	- Get a response to a question
-		E.g. hi "What is the capital of Nigeria?" 0 {DEFAULT_CONTEXT} 
-		Use the following syntax:
-		- hi "Question" "Model (Optinal)" "System prompt (Optinal)"
-	- Chat with the bot:
-		E.g. hi "chat" 1 {DEFAULT_CONTEXT} 
-		- CMD "chat" "Model (Optinal)" "System prompt (Optinal)"
-		To exit the chat, type "exit" at any time.
-	To see the available models, use the following syntax:
-		- hi models
-{availableModels()}
-		''')
-
 def cliParsing():
 	parser = argparse.ArgumentParser(
 		prog='hi',
 		formatter_class=argparse.RawDescriptionHelpFormatter,
-		description=description())
+		description=help.description())
 	parser.add_argument('question', type=str, nargs='?', help='The question to ask the AI')
 	parser.add_argument('model', type=str, nargs='?', help='The model to use')
 	parser.add_argument('context', type=str, nargs='?', help='The context to use')
 	parser.add_argument('-u', '--update', action='store_true', help='Update the hi command')
-	parser.add_argument('-m', '--model', type=str, help=f'Select the model type in api {AVAILABLE_MODELS}', default="0")
-	parser.add_argument('-c', '--context', type=str, help='The System prompt to use', default=DEFAULT_CONTEXT)
+	parser.add_argument('-m', '--model', type=str, help=f'Select the model type in api {CONST.AVAILABLE_MODELS}', default="0")
+	parser.add_argument('-c', '--context', type=str, help='The System prompt to use', default=CONST.DEFAULT_CONTEXT)
 
 	domains = parser.add_mutually_exclusive_group()
 	domains.add_argument('-i', '--include', type=str, nargs='+' , help='The domain to use')
@@ -242,20 +126,19 @@ def cliParsing():
 
 def main(): # params
 	args = cliParsing()
-	print(args)
 	question = read_promt(args.question)
-	model = pick_model(args.model)
+	model = help.pick_model(args.model)
 	context = args.context
 
 	if args.update or question == "update":
 		print("Updating hi")
-		update()
+		settings.update()
 		exit()
 	if question == None or question.lower() == "help" or question == "h" or question == "?":
-		print(description())
+		print(help.description())
 		exit()
 	if question == "models":
-		print(availableModels())
+		print(help.availableModels())
 		exit()
 	args.single_use = False if question == "chat" else True
 	chat_loop(question, model, context, args)

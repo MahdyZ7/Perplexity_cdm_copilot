@@ -6,7 +6,6 @@ import importlib.util
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from io import StringIO
-import argparse
 
 script_dir = Path( __file__ ).parent
 mymodule_path = str( script_dir.joinpath( '..', 'hi') )
@@ -37,10 +36,10 @@ def test_api_key_validation(api_key, expected_status):
 		mock_post.return_value = mock_response
 		
 		if expected_status == 200:
-			hi.testApiKey(api_key)  # Should not raise exception
+			hi.settings.testApiKey(api_key)  # Should not raise exception
 		else:
 			with pytest.raises(SystemExit):
-				hi.testApiKey(api_key)
+				hi.settings.testApiKey(api_key)
 
 # Model Selection Tests
 @pytest.mark.parametrize("input_model,expected_model", [
@@ -57,7 +56,7 @@ def test_api_key_validation(api_key, expected_status):
 	("3", "sonar-reasoning-pro"),
 ])
 def test_pick_model(input_model, expected_model):
-	assert hi.pick_model(input_model) == expected_model
+	assert hi.help.pick_model(input_model) == expected_model
 
 # Chat Loop Tests
 def test_chat_loop_single_use():
@@ -91,7 +90,7 @@ def test_read_prompt_with_stdin():
 def test_update_function():
 	with patch('subprocess.run') as mock_run:
 		mock_run.return_value = MagicMock(stdout="test_path")
-		hi.update()
+		hi.settings.update()
 		mock_run.assert_called()
 
 # Citation Handling Tests
@@ -101,7 +100,7 @@ def test_print_citations():
 		'citations': ['source1', 'source2']
 	}
 	with patch('sys.stdout', new=StringIO()) as fake_output:
-		hi.printCitations(mock_response, "sonar")
+		hi.printCitations(mock_response)
 		assert 'source1' in fake_output.getvalue()
 		assert 'source2' in fake_output.getvalue()
 
