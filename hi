@@ -29,7 +29,7 @@ def printCitations(response) -> None:
 		for index, source in enumerate(citations):
 			print(f"[{index + 1}] {source}")
 
-def chat_loop(question: str, model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.DEFAULT_CONTEXT, args: argparse.Namespace = argparse.Namespace()) -> None:
+def preparePayload(model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.DEFAULT_CONTEXT, args: argparse.Namespace = argparse.Namespace()) -> dict:
 	chat_payload = {
 		"model": model,
 		"messages": []
@@ -48,49 +48,74 @@ def chat_loop(question: str, model: str = CONST.AVAILABLE_MODELS[0], context: st
 			"role": "system",
 			"content": context
 		})
-	while question != "exit":
-		if not args.single_use:
-			print(color("You: ", "blue"), end="")
-			question = input()
-			if not question or question.lower() == "new chat":
-				newchat_bool = input("--> Start a new chat (y/n)? \n\t")
-				if newchat_bool.lower() in ['yes', 'y']:
-					chat_payload["messages"] = []
-					print(color("---NEW CHAT---", "cyan"))
-				else:
-					print(color("/^.^\\ Lets continue our little chat", "purple"))
-				continue
-			elif (question == "change model"):
-				print(color("/^.^\\ ", "purple" ))
-				model = help.pick_model("?")
-				print(color(f"/^.^\\ Using {model} now", "purple" ))
-				continue
-			elif (question == "exit"):
-				exit()
-		chat_payload["messages"].append({
-			"role": "user",
-			"content": question
-		})
-		try:
-			response = requests.post(CONST.API_URL, json=chat_payload, headers=CONST.HEADERS)
-		except requests.exceptions.RequestException as e:
-			print(color(f"Error: {e}", "red"))
-			exit()
+	return chat_payload
+
+def handleUserInput(chat_payload: dict, args: argparse.Namespace) -> str:
+    if not args.single_use:
+        print(color("You: ", "blue"), end="")
+        question = input()
+        if not question or question.lower() == "new chat":
+            newchat_bool = input("--> Start a new chat (y/n)? \n\t")
+            if newchat_bool.lower() in ['yes', 'y']:
+                chat_payload["messages"] = []
+                print(color("---NEW CHAT---", "cyan"))
+            else:
+                print(color("/^.^\\ Lets continue our little chat", "purple"))
+            return ""
+        elif question == "change model":
+            print(color("/^.^\\ ", "purple" ))
+            model = help.pick_model("?")
+            print(color(f"/^.^\\ Using {model} now", "purple" ))
+            chat_payload["model"] = model
+            return ""
+        elif question == "exit":
+            exit()
+        else:
+            chat_payload["messages"].append({
+                "role": "user",
+                "content": question
+            })
+            return question
+    else:
+        chat_payload["messages"].append({
+            "role": "user",
+            "content": args.question
+        })
+        return args.question
+
+def sendRequest(chat_payload: dict) -> requests.Response:
+	try:
+		response = requests.post(CONST.API_URL, json=chat_payload, headers=CONST.HEADERS)
 		if response.status_code != 200:
 			print(color(f"Error:  {response.text}", "red"))
 			exit()
+		return response
+	except requests.exceptions.RequestException as e:
+		print(color(f"Error: {e}", "red"))
+		exit()
+
+def displayResponse(response: requests.Response) -> None:
+	print(color(f"{response.json()['model']}: ", "purple"), end="")
+	print(response.json()["choices"][0]["message"]["content"])
+	printCitations(response)
+	# if args.related:
+		# 	print(color("Related questions: ", "purple"), end="")
+		# 	print(response.json().get('related_questions'))
+
+
+def chat_loop(question: str, model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.DEFAULT_CONTEXT, args: argparse.Namespace = argparse.Namespace()) -> None:
+	chat_payload = preparePayload(model, context, args)
+	while question != "exit":
+		question = handleUserInput(chat_payload, args)
+		if not question:
+			continue
+		response = sendRequest(chat_payload)
 		message = response.json()["choices"][0]["message"]["content"]
 		chat_payload["messages"].append({
 			"role": "assistant",
 			"content": message
 		})
-		response_model = response.json()["model"]
-		print(color(f"{response_model}: ", "purple"), end="")
-		print(message)
-		printCitations(response)
-		# if args.related:
-		# 	print(color("Related questions: ", "purple"), end="")
-		# 	print(response.json().get('related_questions'))
+		displayResponse(response)
 		if args.single_use:
 			return
 
