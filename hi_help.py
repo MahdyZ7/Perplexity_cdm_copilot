@@ -16,14 +16,16 @@ def pick_model(model: str) -> str:
 		return model
 	model = model.lower()
 	match model:
-		case "s" | "so" | "small" | "0":
+		case "r1" | "0":
 			return CONST.AVAILABLE_MODELS[0]
-		case "l" | "lo" | "long" | "1" | "pro":
+		case "s" | "so" | "small" | "1":
 			return CONST.AVAILABLE_MODELS[1]
-		case "r" | "re" | "res" | "reasoning" | "2":
+		case "l" | "lo" | "long" | "2" | "pro":
 			return CONST.AVAILABLE_MODELS[2]
-		case "rp" | "r-pro" | "rpro" | "reasoning-pro" | "3":
+		case "r" | "re" | "reson" | "reasoning" | "3":
 			return CONST.AVAILABLE_MODELS[3]
+		case "rp" | "r-pro" | "rpro" | "reasoning-pro" | "4":
+			return CONST.AVAILABLE_MODELS[4]
 		case "?" | "help" | "h" | "models":
 			printAvailableModels()
 			model = input(f'''Choose a model (press enter for {CONST.AVAILABLE_MODELS[0]}): ''')

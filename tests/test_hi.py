@@ -45,15 +45,16 @@ def test_api_key_validation(api_key, expected_status):
 @pytest.mark.parametrize("input_model,expected_model", [
 	("s", "sonar"),
 	("pro", "sonar-pro"),
-	("invalid", "sonar"),
-	("", "sonar"),
-	(None, "sonar"),
+	("invalid", "r1-1776"),
+	("", "r1-1776"),
+	(None, "r1-1776"),
 	("r", "sonar-reasoning"),
 	("rp", "sonar-reasoning-pro"),
-	("0", "sonar"),
-	("1", "sonar-pro"),
-	("2", "sonar-reasoning"),
-	("3", "sonar-reasoning-pro"),
+	("0", "r1-1776"),
+	("1", "sonar"),
+	("2", "sonar-pro"),
+	("3", "sonar-reasoning"),
+	("4", "sonar-reasoning-pro"),
 ])
 def test_pick_model(input_model, expected_model):
 	assert hi.help.pick_model(input_model) == expected_model
