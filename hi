@@ -13,8 +13,10 @@ except ImportError:
 
 def color(text, color) -> str:
 	if 'rich' in sys.modules:
-		return f"[{color}]{text}\033"
-	return text
+		return f"[{color}]{text}[/]"
+	if color not in CONST.COLORS:
+		return text
+	return f"{CONST.COLORS[color]}{text}{CONST.COLORS['reset']}"
 
 if not CONST.API_KEY:
 	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
@@ -85,7 +87,7 @@ def handleUserInput(chat_payload: dict, args: argparse.Namespace) -> str:
 
 def sendRequest(chat_payload: dict) -> requests.Response:
 	try:
-		response = requests.post(CONST.API_URL, json=chat_payload, headers=CONST.HEADERS)
+		response = requests.post(CONST.API_URL, json=chat_payload, headers=CONST.HEADERS, timeout=CONST.TIMEOUT)
 		if response.status_code != 200:
 			print(color(f"Error:  {response.text}", "red"))
 			exit()
@@ -95,7 +97,7 @@ def sendRequest(chat_payload: dict) -> requests.Response:
 		exit()
 
 def displayResponse(response: requests.Response) -> None:
-	print(color(f"{response.json()['model']}: ", "purple"), end="")
+	print(color(f"{response.json()['model']}: ", "purple"), end=" ")
 	print(response.json()["choices"][0]["message"]["content"])
 	printCitations(response)
 	# if args.related:
@@ -103,11 +105,11 @@ def displayResponse(response: requests.Response) -> None:
 		# 	print(response.json().get('related_questions'))
 
 
-def chat_loop(question: str, model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.DEFAULT_CONTEXT, args: argparse.Namespace = argparse.Namespace()) -> None:
+def chat_loop(model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.DEFAULT_CONTEXT, args: argparse.Namespace = argparse.Namespace()) -> None:
 	chat_payload = preparePayload(model, context, args)
-	while question != "exit":
-		question = handleUserInput(chat_payload, args)
-		if not question:
+	while args.question != "exit":
+		args.question = handleUserInput(chat_payload, args)
+		if not args.question:
 			continue
 		response = sendRequest(chat_payload)
 		message = response.json()["choices"][0]["message"]["content"]
@@ -122,7 +124,7 @@ def chat_loop(question: str, model: str = CONST.AVAILABLE_MODELS[0], context: st
 
 def read_promt(prompt: str = "") -> str:
 	if not sys.stdin.isatty():
-		stdin_prompt = sys.stdin.read()
+		stdin_prompt = sys.stdin.read().strip()
 		if prompt:
 			return(f"{prompt}\n````\n{stdin_prompt}\n````")
 		elif stdin_prompt:
@@ -151,22 +153,22 @@ def cliParsing():
 
 def main(): # params
 	args = cliParsing()
-	question = read_promt(args.question)
+	args.question = read_promt(args.question)
 	model = help.pick_model(args.model)
 	context = args.context
 
-	if args.update or question == "update":
+	if args.update or args.question == "update":
 		print("Updating hi")
 		settings.update()
 		exit()
-	if question == None or question.lower() == "help" or question == "h" or question == "?":
+	if args.question == None or args.question.lower() == "help" or args.question == "h" or args.question == "?":
 		print(help.description())
 		exit()
-	if question == "models":
+	if args.question == "models":
 		print(help.availableModels())
 		exit()
-	args.single_use = False if question == "chat" else True
-	chat_loop(question, model, context, args)
+	args.single_use = (args.question != "chat")
+	chat_loop(model, context, args)
 
 if __name__ == "__main__":
 	main()

@@ -74,7 +74,7 @@ def test_chat_loop_single_use():
 		with patch('sys.stdout', new=StringIO()) as fake_output:
 			args = hi.cliParsing()
 			args.single_use = True
-			hi.chat_loop("test question", "sonar", "give a breif answer", args)
+			hi.chat_loop("sonar", "give a breif answer", args)
 			assert "Test response" in fake_output.getvalue()
 
 # Input Processing Tests
@@ -112,7 +112,7 @@ def test_chat_loop_api_error():
 		with pytest.raises(SystemExit):
 			args = hi.cliParsing()
 			args.single_use = True
-			hi.chat_loop("test", "sonar", "be brief", args)
+			hi.chat_loop("sonar", "be brief", args)
 
 # Integration Tests
 def test_main_function_help():
