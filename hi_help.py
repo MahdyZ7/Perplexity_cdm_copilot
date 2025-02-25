@@ -26,6 +26,8 @@ def pick_model(model: str) -> str:
 			return CONST.AVAILABLE_MODELS[3]
 		case "rp" | "r-pro" | "rpro" | "reasoning-pro" | "4":
 			return CONST.AVAILABLE_MODELS[4]
+		case "d" | "deep" | "5":
+			return CONST.AVAILABLE_MODELS[5]
 		case "?" | "help" | "h" | "models":
 			printAvailableModels()
 			model = input(f'''Choose a model (press enter for {CONST.AVAILABLE_MODELS[0]}): ''')
