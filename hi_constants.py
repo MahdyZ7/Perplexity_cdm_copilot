@@ -22,3 +22,8 @@ COLORS = {
 	"cyan": "\033[36m",
 	"reset": "\033[0m",
 }
+
+# OpenAI Constants
+# API_URL_BASE = "https://api.openai.com/v1" 
+# API_URL = f'{API_URL_BASE}/chat/completions'
+# AVAILABLE_MODELS = ["gpt-4o-mini", "gpt-4o", "o3-mini", "o1"]

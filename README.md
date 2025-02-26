@@ -1,8 +1,8 @@
-# PERPLIXITY COMAND LINE HELPER
+# AI COMAND LINE HELPER
 
 ## Introduction
 ------------
-This project provides a command-line interface (CLI) to interact with the [Perplexity](https://perplexityapi.com/) API. It allows users to receive responses to questions or engage in a chat session with the AI model.
+This project provides a command-line interface (CLI) to interact with the [OpenAi](https://openai.com) [Perplexity](https://perplexityapi.com/) API. It allows users to receive responses to questions or engage in a chat session with the AI model.
 
 You will need to sign up for an API key to use this tool.
 
