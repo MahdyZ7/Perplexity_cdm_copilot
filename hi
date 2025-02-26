@@ -1,18 +1,26 @@
 #!/usr/bin/python3
-import requests, sys
+import requests
+import sys
 import argparse
 import hi_constants as CONST
 import hi_settings as settings
 import hi_help as help
 
-try :
+try:
 	from rich import print
 except ImportError:
 	from builtins import print
 
+try :
+	from openai import OpenAI
+	STREAMRESPONSE = True
+except ImportError:
+	STREAMRESPONSE = False
+
+RICH_AVAILABLE = 'rich' in sys.modules
 
 def color(text, color) -> str:
-	if 'rich' in sys.modules:
+	if RICH_AVAILABLE:
 		return f"[{color}]{text}[/]"
 	if color not in CONST.COLORS:
 		return text
@@ -24,8 +32,7 @@ if not CONST.API_KEY:
 	settings.update_api_key()
 
 
-def printCitations(response) -> None:
-	citations = response.json().get('citations')
+def printCitations(citations: list[str]) -> None:
 	if citations is not None:
 		print("_" * 3)
 		for index, source in enumerate(citations):
@@ -37,13 +44,13 @@ def preparePayload(model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.
 		"messages": []
 	}
 
-	if args.__contains__("include") and args.include:
+	if hasattr(args, 'include') and args.include:
 		chat_payload["search_domain_filter"] = args.include
-	elif args.__contains__("exclude") and args.exclude:
+	elif hasattr(args, 'exclude') and args.exclude:
 		chat_payload["search_domain_filter"] = [f"-{domain}" for domain in args.exclude]
-	if args.__contains__("recency") and args.recency:
+	if hasattr(args, 'recency') and args.recency:
 		chat_payload["search_recency_filter"] = args.recency
-	if args.__contains__("related") and args.related:
+	if hasattr(args, 'related') and args.related:
 		chat_payload["return_related_questions"] = True
 	if context:
 		chat_payload["messages"].append({
@@ -85,13 +92,38 @@ def handleUserInput(chat_payload: dict, args: argparse.Namespace) -> str:
         })
         return args.question
 
-def sendRequest(chat_payload: dict) -> requests.Response:
+def sendRequest(chat_payload: dict) -> str:
 	try:
 		response = requests.post(CONST.API_URL, json=chat_payload, headers=CONST.HEADERS, timeout=CONST.TIMEOUT)
-		if response.status_code != 200:
-			print(color(f"Error:  {response.text}", "red"))
-			exit()
-		return response
+		response.raise_for_status()
+		displayResponse(response)
+		printCitations(response.json().get('citations'))
+		return response.json()["choices"][0]["message"]["content"]
+	except requests.exceptions.RequestException as e:
+		print(color(f"Error: {e}", "red"))
+		exit()
+	
+def streamRequest(chat_payload: dict) -> str:
+	try:
+		response_message = ""
+		citations= []
+		first_response = True
+		client = OpenAI(api_key=CONST.API_KEY, base_url=CONST.API_URL_BASE)
+		response_stream = client.chat.completions.create(
+			model=chat_payload["model"],
+			messages=chat_payload["messages"],
+			stream=True
+		)
+		print(color(f"{chat_payload['model']}: ", "purple"), end="")
+		for response in response_stream:
+			if first_response:
+				first_response = False
+				citations =  response.citations if hasattr(response, "citations") else []
+			response_message += response.choices[0].delta.content
+			print(response.choices[0].delta.content, end="", flush=True)
+		print()
+		printCitations(citations)
+		return response_message
 	except requests.exceptions.RequestException as e:
 		print(color(f"Error: {e}", "red"))
 		exit()
@@ -99,7 +131,6 @@ def sendRequest(chat_payload: dict) -> requests.Response:
 def displayResponse(response: requests.Response) -> None:
 	print(color(f"{response.json()['model']}: ", "purple"), end=" ")
 	print(response.json()["choices"][0]["message"]["content"])
-	printCitations(response)
 	# if args.related:
 		# 	print(color("Related questions: ", "purple"), end="")
 		# 	print(response.json().get('related_questions'))
@@ -111,18 +142,19 @@ def chat_loop(model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.DEFAU
 		args.question = handleUserInput(chat_payload, args)
 		if not args.question:
 			continue
-		response = sendRequest(chat_payload)
-		message = response.json()["choices"][0]["message"]["content"]
+		if STREAMRESPONSE:
+			message = streamRequest(chat_payload)
+		else:
+			message = sendRequest(chat_payload)
 		chat_payload["messages"].append({
 			"role": "assistant",
 			"content": message
 		})
-		displayResponse(response)
 		if args.single_use:
 			return
 
 
-def read_promt(prompt: str = "") -> str:
+def read_prompt(prompt: str = "") -> str:
 	if not sys.stdin.isatty():
 		stdin_prompt = sys.stdin.read().strip()
 		if prompt:
@@ -151,10 +183,10 @@ def cliParsing():
 	
 	return parser.parse_args()
 
-def main(): # params
+def main():
 	args = cliParsing()
-	args.question = read_promt(args.question)
-	model = help.pick_model(args.model)
+	args.question = read_prompt(args.question)
+	args.model = help.pick_model(args.model)
 	context = args.context
 
 	if args.update or args.question == "update":
@@ -168,7 +200,7 @@ def main(): # params
 		print(help.availableModels())
 		exit()
 	args.single_use = (args.question != "chat")
-	chat_loop(model, context, args)
+	chat_loop(args.model, context, args)
 
 if __name__ == "__main__":
 	main()
