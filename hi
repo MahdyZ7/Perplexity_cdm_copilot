@@ -170,10 +170,11 @@ def cliParsing():
 		description=help.description())
 	parser.add_argument('question', type=str, nargs='?', help='The question to ask the AI')
 	parser.add_argument('model', type=str, nargs='?', help='The model to use')
-	parser.add_argument('context', type=str, nargs='?', help='The context to use')
+	parser.add_argument('context', type=str, nargs='?', help='The context to use', default=CONST.DEFAULT_CONTEXT)
 	parser.add_argument('-u', '--update', action='store_true', help='Update the hi command')
 	parser.add_argument('-m', '--model', type=str, help=f'Select the model type in api {CONST.AVAILABLE_MODELS}', default="0")
 	parser.add_argument('-c', '--context', type=str, help='The System prompt to use', default=CONST.DEFAULT_CONTEXT)
+	parser.add_argument('-s', '--search_effort', type=str, choices=['low', 'medium', 'high'], help='The web search effort to use', default='low')
 
 	domains = parser.add_mutually_exclusive_group()
 	domains.add_argument('-i', '--include', type=str, nargs='+' , help='The domain to use')
