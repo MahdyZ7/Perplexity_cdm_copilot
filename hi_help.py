@@ -16,26 +16,26 @@ def pick_model(model: str) -> str:
 	if model in CONST.AVAILABLE_MODELS:
 		return model
 	model = model.lower()
-	match model:
-		case "r1" | "0":
+	if model:
+		if model in ["r1", "0"]:
 			return CONST.AVAILABLE_MODELS[0]
-		case "s" | "so" | "small" | "1":
+		elif model in ["s", "so", "small", "1"]:
 			return CONST.AVAILABLE_MODELS[1]
-		case "l" | "lo" | "long" | "2" | "pro":
+		elif model in ["l", "lo", "long", "2", "pro"]:
 			return CONST.AVAILABLE_MODELS[2]
-		case "r" | "re" | "reson" | "reasoning" | "3":
+		elif model in ["r", "re", "reson", "reasoning", "3"]:
 			return CONST.AVAILABLE_MODELS[3]
-		case "rp" | "r-pro" | "rpro" | "reasoning-pro" | "4":
+		elif model in ["rp", "r-pro", "rpro", "reasoning-pro", "4"]:
 			return CONST.AVAILABLE_MODELS[4]
-		case "d" | "deep" | "5":
+		elif model in ["d", "deep", "5"]:
 			return CONST.AVAILABLE_MODELS[5]
-		case "?" | "help" | "h" | "models":
+		elif model in ["?", "help", "h", "models"]:
 			printAvailableModels()
 			model = input(f'''Choose a model (press enter for {default_model}): ''')
 			return pick_model(model)
-		case _:
-			print(f'''Invalid model name, the model will be set to {default_model}''')
-			return default_model
+	else:
+		print(f'''Invalid model name, the model will be set to {default_model}''')
+		return default_model
 
 def description() -> str:
 	return (f'''welcome to the perplexity command line ai
