@@ -10,8 +10,9 @@ def printAvailableModels():
 	print(availableModels())
 
 def pick_model(model: str) -> str:
+	default_model = CONST.AVAILABLE_MODELS[1]
 	if not model:
-		return CONST.AVAILABLE_MODELS[0]
+		return default_model
 	if model in CONST.AVAILABLE_MODELS:
 		return model
 	model = model.lower()
@@ -30,12 +31,12 @@ def pick_model(model: str) -> str:
 			return CONST.AVAILABLE_MODELS[5]
 		case "?" | "help" | "h" | "models":
 			printAvailableModels()
-			model = input(f'''Choose a model (press enter for {CONST.AVAILABLE_MODELS[0]}): ''')
+			model = input(f'''Choose a model (press enter for {default_model}): ''')
 			return pick_model(model)
 		case _:
-			print(f'''Invalid model name, the model will be set to {CONST.AVAILABLE_MODELS[0]}''')
-			return CONST.AVAILABLE_MODELS[0]
-		
+			print(f'''Invalid model name, the model will be set to {default_model}''')
+			return default_model
+
 def description() -> str:
 	return (f'''welcome to the perplexity command line ai
 This is a simple command line interface to interact with the perplexity AI: 
