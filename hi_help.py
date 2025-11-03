@@ -31,9 +31,9 @@ def pick_model(model: str) -> str:
 			printAvailableModels()
 			model = input(f'''Choose a model (press enter for {default_model}): ''')
 			return pick_model(model)
-	else:
-		print(f'''Invalid model name, the model will be set to {default_model}''')
-		return default_model
+		case _:
+			print(f'''Invalid model name, the model will be set to {default_model}''')
+			return default_model
 
 def description() -> str:
 	return (f'''welcome to the perplexity command line ai
