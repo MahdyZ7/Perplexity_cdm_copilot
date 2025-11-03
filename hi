@@ -1,10 +1,15 @@
-#!/usr/bin/python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = ["requests", "rich", "openai", "perplexityai", "uv", "argparse"]
+# ///
+
 import requests
 import sys
 import argparse
 import hi_constants as CONST
 import hi_settings as settings
 import hi_help as help
+from perplexity import Perplexity
 
 try:
 	from rich import print
