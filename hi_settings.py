@@ -1,13 +1,13 @@
 import requests
 import os
-import sys
 import subprocess
 import hi_constants as C
 from hi_help import color
+
 try:
-	from rich import print
+    from rich import print
 except ImportError:
-	from builtins import print
+    from builtins import print
 
 
 def testApiKey(api_key: str) -> None:
@@ -71,7 +71,7 @@ def update() -> None:
             capture_output=True,
             text=True,
             timeout=5,
-            check=True
+            check=True,
         ).stdout.strip("\n")
         if directory == "." or directory is None:
             print(
@@ -88,7 +88,7 @@ Check that you have installed hi first",
             capture_output=True,
             text=True,
             check=True,
-            timeout=15
+            timeout=15,
         )
         print(color("Update run successfully", "green"))
     except subprocess.CalledProcessError as e:

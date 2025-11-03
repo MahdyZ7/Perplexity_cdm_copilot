@@ -8,6 +8,9 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 from io import StringIO
 
+# Set a dummy API key for testing to prevent interactive prompts during module import
+os.environ.setdefault("PERPLEXITY_API_KEY", "test-api-key-for-testing")
+
 script_dir = Path(__file__).parent
 mymodule_path = str(script_dir.joinpath("..", "hi"))
 
@@ -108,6 +111,7 @@ def test_pick_model(input_model, expected_model):
 def test_pick_model_edge_cases(input_model, expected_model):
     assert hi.help.pick_model(input_model) == expected_model
 
+
 # Input Processing Tests
 def test_read_prompt_with_stdin():
     test_input = "test input from stdin"
@@ -130,7 +134,10 @@ def test_update_function():
 # Citation Handling Tests
 def test_print_citations():
     mock_response = MagicMock()
-    mock_response.list.return_value = [{"title": "source1", "url": "http://source1.com", "date": "2023-01-01"}, {"title": "source2", "url": "http://source2.com", "date": "2023-01-02"}]
+    mock_response.list.return_value = [
+        {"title": "source1", "url": "http://source1.com", "date": "2023-01-01"},
+        {"title": "source2", "url": "http://source2.com", "date": "2023-01-02"},
+    ]
     with patch("sys.stdout", new=StringIO()) as fake_output:
         hi.printSearchResults(mock_response.list())
         assert "source1" in fake_output.getvalue()
@@ -155,24 +162,36 @@ def test_print_citations_none():
 
 def test_print_citations_with_special_characters():
     mock_response = MagicMock()
-    mock_response.list.return_value = [{"title": "source1", "url": "http://source1.com", "date": "2023-01-01"}, {"title": "source2 with special char: ©", "url": "http://source2.com", "date": "2023-01-02"}]
+    mock_response.list.return_value = [
+        {"title": "source1", "url": "http://source1.com", "date": "2023-01-01"},
+        {
+            "title": "source2 with special char: ©",
+            "url": "http://source2.com",
+            "date": "2023-01-02",
+        },
+    ]
     with patch("sys.stdout", new=StringIO()) as fake_output:
         hi.printSearchResults(mock_response.list())
         assert "source1" in fake_output.getvalue()
         assert "source2 with special char: ©" in fake_output.getvalue()
 
+
 # Integration Tests
 def test_main_function_help():
-    with patch("sys.stdin") as mock_stdin:
-        mock_stdin.isatty.return_value = True
-        with patch("sys.argv", ["script.py", "help"]):
-            with patch("sys.stdout", new=StringIO()) as fake_output:
-                with pytest.raises(SystemExit):
-                    hi.main()
-                assert (
-                    "welcome to the perplexity command line ai"
-                    in fake_output.getvalue()
-                )
+    with patch.dict("os.environ", {"PERPLEXITY_API_KEY": "test-key"}):
+        # Re-import to pick up the new environment variable
+        with patch.object(hi, "CONST") as mock_const:
+            mock_const.API_KEY = "test-key"
+            with patch("sys.stdin") as mock_stdin:
+                mock_stdin.isatty.return_value = True
+                with patch("sys.argv", ["script.py", "help"]):
+                    with patch("sys.stdout", new=StringIO()) as fake_output:
+                        with pytest.raises(SystemExit):
+                            hi.main()
+                        assert (
+                            "welcome to the perplexity command line ai"
+                            in fake_output.getvalue()
+                        )
 
 
 @pytest.fixture
@@ -267,7 +286,7 @@ def test_prepare_payload_with_related_questions():
     args.related = True
 
     result = hi.preparePayload("sonar", "context", args)
-    assert result["return_related_questions"] == True
+    assert result["return_related_questions"]
 
 
 # Handle User Input Tests
@@ -344,16 +363,13 @@ def test_handle_user_input_normal_question():
 
 # Send Request Tests
 def test_send_request_success():
-    chat_payload = {
-        "model": "sonar",
-        "messages": [{"role": "user", "content": "test"}]
-    }
+    chat_payload = {"model": "sonar", "messages": [{"role": "user", "content": "test"}]}
 
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
         "choices": [{"message": {"content": "response text"}}],
-        "model": "sonar"
+        "model": "sonar",
     }
 
     with patch("requests.post", return_value=mock_response):
@@ -364,10 +380,7 @@ def test_send_request_success():
 
 
 def test_send_request_timeout():
-    chat_payload = {
-        "model": "sonar",
-        "messages": [{"role": "user", "content": "test"}]
-    }
+    chat_payload = {"model": "sonar", "messages": [{"role": "user", "content": "test"}]}
 
     with patch("requests.post", side_effect=requests.exceptions.Timeout):
         with pytest.raises(SystemExit):
@@ -375,10 +388,7 @@ def test_send_request_timeout():
 
 
 def test_send_request_http_error():
-    chat_payload = {
-        "model": "sonar",
-        "messages": [{"role": "user", "content": "test"}]
-    }
+    chat_payload = {"model": "sonar", "messages": [{"role": "user", "content": "test"}]}
 
     mock_response = MagicMock()
     mock_response.status_code = 500
@@ -394,7 +404,7 @@ def test_display_response():
     mock_response = MagicMock()
     mock_response.json.return_value = {
         "model": "sonar",
-        "choices": [{"message": {"content": "Test response"}}]
+        "choices": [{"message": {"content": "Test response"}}],
     }
 
     with patch("sys.stdout", new=StringIO()) as fake_output:
@@ -471,13 +481,13 @@ def test_cli_parsing_with_recency():
 def test_cli_parsing_with_related():
     with patch("sys.argv", ["hi", "test", "-R"]):
         args = hi.cliParsing()
-        assert args.related == True
+        assert args.related
 
 
 def test_cli_parsing_update_flag():
     with patch("sys.argv", ["hi", "-u"]):
         args = hi.cliParsing()
-        assert args.update == True
+        assert args.update
 
 
 # Help Module Tests
@@ -525,7 +535,10 @@ def test_update_api_key_with_valid_key():
                         hi.settings.update_api_key()
                         output = fake_output.getvalue()
                         # Should complete without raising SystemExit
-                        assert "enviroment variable" in output or "API Key is valid" in output
+                        assert (
+                            "enviroment variable" in output
+                            or "API Key is valid" in output
+                        )
 
 
 # Main Function Tests
@@ -539,23 +552,29 @@ def test_main_function_update():
 
 
 def test_main_function_models():
-    with patch("sys.argv", ["hi", "models"]):
-        with patch("sys.stdin") as mock_stdin:
-            mock_stdin.isatty.return_value = True
-            with patch("sys.stdout", new=StringIO()) as fake_output:
-                with pytest.raises(SystemExit):
-                    hi.main()
-                assert "sonar" in fake_output.getvalue()
+    with patch.dict("os.environ", {"PERPLEXITY_API_KEY": "test-key"}):
+        with patch.object(hi, "CONST") as mock_const:
+            mock_const.API_KEY = "test-key"
+            with patch("sys.argv", ["hi", "models"]):
+                with patch("sys.stdin") as mock_stdin:
+                    mock_stdin.isatty.return_value = True
+                    with patch("sys.stdout", new=StringIO()) as fake_output:
+                        with pytest.raises(SystemExit):
+                            hi.main()
+                        assert "sonar" in fake_output.getvalue()
 
 
 def test_main_function_chat():
-    with patch("sys.argv", ["hi", "chat"]):
-        with patch("sys.stdin") as mock_stdin:
-            mock_stdin.isatty.return_value = True
-            with patch.object(hi, "chat_loop") as mock_chat:
-                mock_chat.return_value = None
-                hi.main()
-                mock_chat.assert_called_once()
+    with patch.dict("os.environ", {"PERPLEXITY_API_KEY": "test-key"}):
+        with patch.object(hi, "CONST") as mock_const:
+            mock_const.API_KEY = "test-key"
+            with patch("sys.argv", ["hi", "chat"]):
+                with patch("sys.stdin") as mock_stdin:
+                    mock_stdin.isatty.return_value = True
+                    with patch.object(hi, "chat_loop") as mock_chat:
+                        mock_chat.return_value = None
+                        hi.main()
+                        mock_chat.assert_called_once()
 
 
 # Edge Cases and Error Handling
@@ -583,6 +602,7 @@ def test_print_search_results_malformed_data():
 # Constants Tests
 def test_constants_available_models():
     import hi_constants as CONST
+
     assert len(CONST.AVAILABLE_MODELS) == 5
     assert "sonar" in CONST.AVAILABLE_MODELS
     assert "sonar-pro" in CONST.AVAILABLE_MODELS
@@ -590,11 +610,11 @@ def test_constants_available_models():
 
 def test_constants_api_url():
     import hi_constants as CONST
+
     assert CONST.API_URL == "https://api.perplexity.ai/chat/completions"
 
 
 def test_constants_timeout():
     import hi_constants as CONST
+
     assert CONST.TIMEOUT == 7200
-
-

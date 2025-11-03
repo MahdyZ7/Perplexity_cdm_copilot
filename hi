@@ -22,11 +22,6 @@ except ImportError:
 	STREAMRESPONSE = False
 
 
-if not CONST.API_KEY:
-	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
-	print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
-	settings.update_api_key()
-   
 def printSearchResults(search_results) -> None:
 	if search_results is not None:
 		print("-" * 3, color("Search Results", "yellow"), "-" * 3)
@@ -55,37 +50,37 @@ def preparePayload(model: str = CONST.AVAILABLE_MODELS[0], context: str = CONST.
 	return chat_payload
 
 def handleUserInput(chat_payload: dict, args: argparse.Namespace) -> str:
-    if not args.single_use:
-        print(color("You: ", "blue"), end="")
-        question = input()
-        if not question or question.lower() == "new chat":
-            newchat_bool = input("--> Start a new chat (y/n)? \n\t")
-            if newchat_bool.lower() in ['yes', 'y']:
-                chat_payload["messages"] = []
-                print(color("---NEW CHAT---", "cyan"))
-            else:
-                print(color("/^.^\\ Lets continue our little chat", "purple"))
-            return ""
-        elif question == "change model":
-            print(color("/^.^\\ ", "purple" ))
-            model = help.pick_model("?")
-            print(color(f"/^.^\\ Using {model} now", "purple" ))
-            chat_payload["model"] = model
-            return ""
-        elif question == "exit":
-            exit()
-        else:
-            chat_payload["messages"].append({
-                "role": "user",
-                "content": question
-            })
-            return question
-    else:
-        chat_payload["messages"].append({
-            "role": "user",
-            "content": args.question
-        })
-        return args.question
+	if not args.single_use:
+		print(color("You: ", "blue"), end="")
+		question = input()
+		if not question or question.lower() == "new chat":
+			newchat_bool = input("--> Start a new chat (y/n)? \n\t")
+			if newchat_bool.lower() in ['yes', 'y']:
+				chat_payload["messages"] = []
+				print(color("---NEW CHAT---", "cyan"))
+			else:
+				print(color("/^.^\\ Lets continue our little chat", "purple"))
+			return ""
+		elif question == "change model":
+			print(color("/^.^\\ ", "purple" ))
+			model = help.pick_model("?")
+			print(color(f"/^.^\\ Using {model} now", "purple" ))
+			chat_payload["model"] = model
+			return ""
+		elif question == "exit":
+			exit()
+		else:
+			chat_payload["messages"].append({
+				"role": "user",
+				"content": question
+			})
+			return question
+	else:
+		chat_payload["messages"].append({
+			"role": "user",
+			"content": args.question
+		})
+		return args.question
 
 def sendRequest(chat_payload: dict) -> str:
 	try:
@@ -117,23 +112,23 @@ def streamRequest(chat_payload: dict) -> str:
 		print()
 		printSearchResults(search_results)
 		return response_message
-    except requests.exceptions.Timeout:
-        print(color("Error: Request timed out. Please try again.", "red"))
-        exit(1)
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 401:
-            print(color("Error: Invalid API key. Please check your credentials.", "red"))
-        elif e.response.status_code == 429:
-            print(color("Error: Rate limit exceeded. Please wait and try again.", "red"))
-        else:
-            print(color(f"Error: HTTP {e.response.status_code} - {e}", "red"))
-        exit(1)
-    except requests.exceptions.ConnectionError:
-        print(color("Error: Cannot connect to API. Check your internet connection.", "red"))
-        exit(1)
-    except (KeyError, IndexError) as e:
-        print(color(f"Error: Unexpected API response format: {e}", "red"))
-        exit(1)
+	except requests.exceptions.Timeout:
+		print(color("Error: Request timed out. Please try again.", "red"))
+		exit(1)
+	except requests.exceptions.HTTPError as e:
+		if e.response.status_code == 401:
+			print(color("Error: Invalid API key. Please check your credentials.", "red"))
+		elif e.response.status_code == 429:
+			print(color("Error: Rate limit exceeded. Please wait and try again.", "red"))
+		else:
+			print(color(f"Error: HTTP {e.response.status_code} - {e}", "red"))
+		exit(1)
+	except requests.exceptions.ConnectionError:
+		print(color("Error: Cannot connect to API. Check your internet connection.", "red"))
+		exit(1)
+	except (KeyError, IndexError) as e:
+		print(color(f"Error: Unexpected API response format: {e}", "red"))
+		exit(1)
 
 def displayResponse(response: requests.Response) -> None:
 	print(color(f"{response.json()['model']}: ", "purple"), end=" ")
@@ -196,6 +191,11 @@ def main():
 	args.question = read_prompt(args.question)
 	args.model = help.pick_model(args.model)
 	context = args.context
+
+	if not CONST.API_KEY:
+		print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
+		print("You can get an API key by signing up at https://www.perplexity.ai/settings/api")
+		settings.update_api_key()
 
 	if args.update or args.question == "update":
 		print("Updating hi")
