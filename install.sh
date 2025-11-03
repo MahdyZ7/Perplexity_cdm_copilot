@@ -15,6 +15,12 @@ API_KEY=$1
 current_dir=$(pwd)
 current_env=$(env)
 
+# install UV
+if ! command -v uv >/dev/null 2>&1; then
+  echo "UV is not installed. Installing UV..."
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
   # if the terminal is bash, add the application to the path
 if [ -f ~/.bashrc ]; then
 	echo "Application added to the path"

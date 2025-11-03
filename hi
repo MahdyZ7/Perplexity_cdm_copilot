@@ -9,27 +9,18 @@ import argparse
 import hi_constants as CONST
 import hi_settings as settings
 import hi_help as help
+from hi_help import color
 from perplexity import Perplexity
-
 try:
 	from rich import print
 except ImportError:
 	from builtins import print
-
 try:
 	from openai import OpenAI
 	STREAMRESPONSE = True
 except ImportError:
 	STREAMRESPONSE = False
 
-RICH_AVAILABLE = 'rich' in sys.modules
-
-def color(text, color) -> str:
-	if RICH_AVAILABLE:
-		return f"[{color}]{text}[/]"
-	if color not in CONST.COLORS:
-		return text
-	return f"{CONST.COLORS[color]}{text}{CONST.COLORS['reset']}"
 
 if not CONST.API_KEY:
 	print("Please set the PERPLEXITY_API_KEY environment variable to your api key")
@@ -126,9 +117,23 @@ def streamRequest(chat_payload: dict) -> str:
 		print()
 		printSearchResults(search_results)
 		return response_message
-	except requests.exceptions.RequestException as e:
-		print(color(f"Error: {e}", "red"))
-		exit()
+    except requests.exceptions.Timeout:
+        print(color("Error: Request timed out. Please try again.", "red"))
+        exit(1)
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 401:
+            print(color("Error: Invalid API key. Please check your credentials.", "red"))
+        elif e.response.status_code == 429:
+            print(color("Error: Rate limit exceeded. Please wait and try again.", "red"))
+        else:
+            print(color(f"Error: HTTP {e.response.status_code} - {e}", "red"))
+        exit(1)
+    except requests.exceptions.ConnectionError:
+        print(color("Error: Cannot connect to API. Check your internet connection.", "red"))
+        exit(1)
+    except (KeyError, IndexError) as e:
+        print(color(f"Error: Unexpected API response format: {e}", "red"))
+        exit(1)
 
 def displayResponse(response: requests.Response) -> None:
 	print(color(f"{response.json()['model']}: ", "purple"), end=" ")

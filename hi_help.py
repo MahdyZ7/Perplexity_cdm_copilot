@@ -1,5 +1,19 @@
 import hi_constants as CONST
+import sys
+try:
+	from rich import print
+except ImportError:
+	from builtins import print
+ 
+RICH_AVAILABLE = 'rich' in sys.modules
 
+
+def color(text, color) -> str:
+	if RICH_AVAILABLE:
+		return f"[{color}]{text}[/]"
+	if color not in CONST.COLORS:
+		return text
+	return f"{CONST.COLORS[color]}{text}{CONST.COLORS['reset']}"
 
 def availableModels() -> str:
     models = "\t Available models:\n"

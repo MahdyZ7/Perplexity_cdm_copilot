@@ -3,12 +3,11 @@ import os
 import sys
 import subprocess
 import hi_constants as C
-
-
-def color(text, color) -> str:
-    if "rich" in sys.modules:
-        return f"[{color}]{text}\033"
-    return text
+from hi_help import color
+try:
+	from rich import print
+except ImportError:
+	from builtins import print
 
 
 def testApiKey(api_key: str) -> None:
@@ -71,6 +70,8 @@ def update() -> None:
             ["dirname", subprocess.run(["which", "hi"], capture_output=True).stdout],
             capture_output=True,
             text=True,
+            timeout=5,
+            check=True
         ).stdout.strip("\n")
         if directory == "." or directory is None:
             print(
@@ -82,7 +83,12 @@ Check that you have installed hi first",
             )
             exit()
         subprocess.run(
-            command_string, cwd=directory, capture_output=True, text=True, check=True
+            command_string,
+            cwd=directory,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=15
         )
         print(color("Update run successfully", "green"))
     except subprocess.CalledProcessError as e:

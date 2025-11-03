@@ -42,7 +42,7 @@ You will need to sign up for an API key to use this tool.
 	```bash
 	chmod +x hi
 	export $PATH=\$PATH:$PWD
-	export PERPLIXITY_API_KEY=your_api_key
+	export PERPLEXITY_API_KEY=your_api_key
 	```
 
 ## Usage
@@ -104,6 +104,6 @@ hi models
 - Check your internet connection for API requests.
 - If you encounter issues updating the API key, manually add it to your shell configuration file.
 	```bash
-	export PERPLIXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+	export PERPLEXITY_API_KEY=pplx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 	```
 
