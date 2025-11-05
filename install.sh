@@ -21,25 +21,9 @@ if ! command -v uv >/dev/null 2>&1; then
   curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
 
-  # if the terminal is bash, add the application to the path
-if [ -f ~/.bashrc ]; then
-	echo "Application added to the path"
-	echo "export PATH=\$PATH:$(pwd)" >> ~/.bashrc
-	echo "API key added to the path"
-	echo "export PERPLEXITY_API_KEY=$API_KEY" >> ~/.bashrc
-	source ~/.bashrc
-fi
-if [ -f  ~/.zshrc ]; then
-  # if the terminal is zsh, add the application to the path
-  echo "export PATH=\$PATH:$(pwd)" >> ~/.zshrc
-  echo "Application added to the path"
-  echo "export PERPLEXITY_API_KEY=$API_KEY" >> ~/.zshrc
-  source ~/.zshrc
-fi
-if [ -f ~/.cshrc ]; then
-  # if the terminal is csh, add the application to the path
-  echo "setenv PATH \$PATH:$(pwd)" >> ~/.cshrc
-  echo "Application added to the path"
-  echo "setenv PERPLEXITY_API_KEY $API_KEY" >> ~/.cshrc
-  source ~/.cshrc
-fi
+# create the .perplexity directory in the home directory
+mkdir -p ~/.perplexity
+chmod 700 ~/.perplexity
+# create the apikey.json file in the .perplexity directory
+echo "{\"api_key\": \"$API_KEY\"}" > ~/.perplexity/apikey.json
+chmod 600 ~/.perplexity/apikey.json

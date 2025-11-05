@@ -1,16 +1,34 @@
 # Constants
 import os
+from pathlib import Path
+import json
+
+def _load_api_key() -> str:
+	# Deprecated method of loading API key
+	api_key = os.getenv("PERPLEXITY_API_KEY")
+	if api_key:
+		return api_key
+	# Load from config file
+	config_file = Path.home() / ".perplexity" / "apikey.json"
+	if config_file.exists():
+		with open(config_file, "r") as f:
+			config = json.load(f)
+			key = config.get("api_key", "")
+			if key:
+				os.environ["PERPLEXITY_API_KEY"] = key
+				return key
+	return ""
 
 API_KEY_ENV_VAR = "PERPLEXITY_API_KEY"
-API_KEY = os.getenv(API_KEY_ENV_VAR) or ""
+API_KEY = _load_api_key()
 API_URL_BASE = "https://api.perplexity.ai"
 API_URL = f"{API_URL_BASE}/chat/completions"
 AVAILABLE_MODELS = [
-    "sonar",
-    "sonar-pro",
-    "sonar-reasoning",
-    "sonar-reasoning-pro",
-    "sonar-deep-research",
+	"sonar",
+	"sonar-pro",
+	"sonar-reasoning",
+	"sonar-reasoning-pro",
+	"sonar-deep-research",
 ]
 DEFAULT_MODEL = AVAILABLE_MODELS[0]
 DEFAULT_CONTEXT = """You are an expert research assistant specializing in technology and science. 
@@ -30,19 +48,19 @@ Format your responses with clear headings and bullet points when appropriate."""
 # ❺. Execute the refined instruction from the chosen perspective and present the result using the format 'Execution: \\[$answer\\]'
 # '''
 HEADERS = {
-    "accept": "application/json",
-    "content-type": "application/json",
-    "authorization": f"Bearer {API_KEY}",
+	"accept": "application/json",
+	"content-type": "application/json",
+	"authorization": f"Bearer {API_KEY}",
 }
 TIMEOUT = 7200
 COLORS = {
-    "red": "\033[31m",
-    "green": "\033[32m",
-    "yellow": "\033[33m",
-    "blue": "\033[34m",
-    "magenta": "\033[35m",
-    "cyan": "\033[36m",
-    "reset": "\033[0m",
+	"red": "\033[31m",
+	"green": "\033[32m",
+	"yellow": "\033[33m",
+	"blue": "\033[34m",
+	"magenta": "\033[35m",
+	"cyan": "\033[36m",
+	"reset": "\033[0m",
 }
 
 # OpenAI Constants
